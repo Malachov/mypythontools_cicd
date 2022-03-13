@@ -59,7 +59,7 @@ def deploy_to_pypi(setup_path: None | PathLike = None, clean: bool = True, verbo
         error_header="Build python package for PyPi deployment failed.",
     )
 
-    command = f"twine upload -u {usr} -p {password} dist/*"
+    command = f"twine upload dist/*"
 
     terminal_do_command(
         command,

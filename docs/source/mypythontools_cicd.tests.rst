@@ -1,7 +1,7 @@
-mypythontools_cicd.deploy package
+mypythontools\_cicd.tests package
 =================================
 
-.. automodule:: mypythontools_cicd.deploy
+.. automodule:: mypythontools_cicd.tests
    :members:
    :undoc-members:
    :show-inheritance:

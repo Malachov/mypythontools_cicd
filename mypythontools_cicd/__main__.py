@@ -1,4 +1,4 @@
-"""Run pipeline if using ``python -m cicd``.
+"""Run pipeline if using ``python -m mypythontools_cicd``.
 
 This can be better than console_script when want to ensure that libraries from current venv will be used.
 """

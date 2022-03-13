@@ -1,5 +1,5 @@
-mypythontools_cicd.venvs package
-================================
+mypythontools\_cicd.venvs package
+=================================
 
 .. automodule:: mypythontools_cicd.venvs
    :members:

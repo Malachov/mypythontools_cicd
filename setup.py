@@ -22,15 +22,15 @@ if __name__ == "__main__":
         license="mit",
         long_description_content_type="text/markdown",
         long_description=readme,
-        name="mypythontools",
+        name="mypythontools_cicd",
         packages=find_packages(exclude=("tests**",)),
         platforms="any",
         project_urls={
-            "Documentation": "https://mypythontools.readthedocs.io/",
-            "Homepage": "https://github.com/Malachov/mypythontools",
+            "Documentation": "https://mypythontools_cicd.readthedocs.io/",
+            "Homepage": "https://github.com/Malachov/mypythontools_cicd",
         },
         python_requires=">=3.7",
-        url="https://github.com/Malachov/mypythontools",
+        url="https://github.com/Malachov/mypythontools_cicd",
         version=version,
         entry_points={
             "console_scripts": [

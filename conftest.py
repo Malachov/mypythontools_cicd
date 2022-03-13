@@ -12,10 +12,10 @@ root = Path(__file__).parent
 if root not in sys.path:
     sys.path.insert(0, root.as_posix())
 
-from mypythontools import cicd
-from mypythontools import helpers
+from mypythontools_cicd.tests import setup_tests
+import mypythontools
 
-cicd.tests.setup_tests(matplotlib_test_backend=True)
+setup_tests(matplotlib_test_backend=True)
 
 # Can be loaded from tests here or tests in test project
 test_project_path = (
@@ -29,7 +29,7 @@ def setup_tests():
     cwd_backup = Path.cwd()
 
     os.chdir(test_project_path.as_posix())
-    helpers.paths.PROJECT_PATHS.reset_paths()
+    mypythontools.paths.PROJECT_PATHS.reset_paths()
 
     yield
 

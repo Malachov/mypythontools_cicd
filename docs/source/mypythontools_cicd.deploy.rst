@@ -1,7 +1,7 @@
-mypythontools.helpers.misc package
+mypythontools\_cicd.deploy package
 ==================================
 
-.. automodule:: mypythontools.helpers.misc
+.. automodule:: mypythontools_cicd.deploy
    :members:
    :undoc-members:
    :show-inheritance:

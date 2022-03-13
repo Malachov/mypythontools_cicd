@@ -1,5 +1,5 @@
-mypythontools_cicd.project\_utils package
-=========================================
+mypythontools\_cicd.project\_utils package
+==========================================
 
 .. automodule:: mypythontools_cicd.project_utils
    :members:

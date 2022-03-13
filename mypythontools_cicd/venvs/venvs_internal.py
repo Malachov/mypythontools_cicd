@@ -81,7 +81,6 @@ class Venv:
 
         self.installed = True if (self.executable).exists() else False
 
-        # TODO verify on linux
         self.scripts_path: Path = scripts_path
         """Path to the executables. Can be directly used in terminal. Some libraries cannot use
         ``python -m package`` syntax and therefore it can be called from scripts folder."""
