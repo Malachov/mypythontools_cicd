@@ -83,7 +83,7 @@ from mypythontools_cicd import venvs
 
 __all__ = ["build", "deploy", "project_utils", "tests", "venvs"]
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 __author__ = "Daniel Malachov"
 __license__ = "MIT"
