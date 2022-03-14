@@ -1,6 +1,6 @@
-*************
-mypythontools
-*************
+******************
+mypythontools_cicd
+******************
 
-.. automodule:: mypythontools
+.. automodule:: mypythontools_cicd
     :noindex:
