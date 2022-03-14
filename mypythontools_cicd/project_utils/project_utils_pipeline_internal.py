@@ -438,14 +438,14 @@ def project_utils_pipeline(
                 verbose=verbose,
             )
 
-    except Exception:  # pylint: disable=broad-except
+    except Exception as err:  # pylint: disable=broad-except
         if config.version:
             set_version(original_version)  # type: ignore
 
         raise RuntimeError(
             f"{3 * EMOJIS.DISAPPOINTMENT} Utils pipeline failed {3 * EMOJIS.DISAPPOINTMENT} \n\n"
             "Original version restored. Nothing was pushed to repo, you can restart pipeline."
-        )
+        ) from err
 
     try:
         if config.deploy:

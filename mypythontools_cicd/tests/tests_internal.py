@@ -152,6 +152,9 @@ def run_tests(
 
     test_command = " ".join(complete_args)
 
+    if sync_requirements and isinstance(sync_requirements, PathLike):
+        sync_requirements = [sync_requirements]
+
     if virtualenvs:
         test_commands = []
         virtualenvs = [virtualenvs] if isinstance(virtualenvs, (str, Path)) else virtualenvs
@@ -184,6 +187,15 @@ def run_tests(
         for i in wsl_virtualenvs:
             if verbosity:
                 print(f"\nTesting wsl_virtualenv {i}.\n")
+
+            if sync_requirements:
+                for i in sync_requirements:
+                    terminal_do_command(
+                        f"wsl venv/linux/bin/pip install -r {validate_path(i)}",
+                        verbose=verbose,
+                        error_header="Installing libraries in wsl failed.",
+                    )
+
             terminal_do_command(
                 f"wsl source venv/linux/bin/activate && wsl {i}/bin/pytest",
                 cwd=tested_path.as_posix(),

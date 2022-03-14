@@ -18,7 +18,7 @@ if __name__ == "__main__":
     # All the parameters can be overwritten via CLI args
     project_utils_pipeline(
         reformat=True,
-        test=False,
+        test=True,
         test_options={"virtualenvs": ["venv/37", "venv/310"], "wsl_virtualenvs": "venv/linux"},
         version="increment",
         docs=True,
