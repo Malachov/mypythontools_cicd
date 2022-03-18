@@ -24,7 +24,7 @@ test_project_path = (
 
 
 @pytest.fixture(autouse=True)
-def setup_tests():
+def before_test():
     """Configure tests. Runs automatically from pytest and is called if running from file."""
     cwd_backup = Path.cwd()
 

@@ -1,16 +1,20 @@
+"""Install the package."""
 from setuptools import setup, find_packages
 import pkg_resources
-import mypythontools
+import re
+from pathlib import Path
 
-version = mypythontools.__version__
-
-with open("README.md") as readme_file:
-    readme = readme_file.read()
-
-with open("requirements.txt") as f:
-    my_requirements = [str(requirement) for requirement in pkg_resources.parse_requirements(f)]
 
 if __name__ == "__main__":
+
+    with open(Path("requirements.txt").resolve()) as f:
+        my_requirements = [str(requirement) for requirement in pkg_resources.parse_requirements(f)]
+
+    with open("README.md") as readme_file:
+        readme = readme_file.read()
+
+    with open("mypythontools_cicd/__init__.py") as version_file:
+        version = re.findall('__version__ = "(.*)"', version_file.read())[0]
 
     setup(
         author_email="malachovd@seznam.cz",

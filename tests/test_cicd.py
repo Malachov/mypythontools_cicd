@@ -4,19 +4,32 @@
 
 
 from __future__ import annotations
-import shutil
 from pathlib import Path
 import sys
 import os
+
+from mypythontools.misc import delete_files
 
 root_path = Path(__file__).parents[1].as_posix()  # pylint: disable=no-member
 sys.path.insert(0, root_path)
 
 
 import mypythontools_cicd as cicd
-from mypythontools.paths import PROJECT_PATHS
+from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 test_project_path = Path("tests").resolve() / "tested project"
+
+# pylint: disable=missing-function-docstring,
+
+
+def test_project_paths():
+    cicd.project_paths.PROJECT_PATHS.reset_paths()
+    assert cicd.project_paths.PROJECT_PATHS.root == test_project_path
+    assert cicd.project_paths.PROJECT_PATHS.init == test_project_path / "project_lib" / "__init__.py"
+    assert cicd.project_paths.PROJECT_PATHS.app == test_project_path / "project_lib"
+    assert cicd.project_paths.PROJECT_PATHS.docs == test_project_path / "docs"
+    assert cicd.project_paths.PROJECT_PATHS.readme == test_project_path / "README.md"
+    assert cicd.project_paths.PROJECT_PATHS.tests == test_project_path / "tests"
 
 
 def test_docs_regenerate():
@@ -32,9 +45,7 @@ def test_docs_regenerate():
             not_deleted_file.write("I will not be deleted.")
             # missing_ok=True from python 3.8 on...
 
-    cicd.project_utils.project_utils_functions.docs_regenerate(
-        keep=("conf.py", "index.rst", "_static", "_templates", "content/**", "not_deleted.rst")
-    )
+    cicd.project_utils.project_utils_functions.docs_regenerate(keep=("not_deleted.rst",))
 
     assert rst_path.exists()
     assert another_rst_path.exists()
@@ -67,8 +78,8 @@ def test_build():
 
     assert (test_project_path / "dist").exists()
 
-    shutil.rmtree(test_project_path / "build")
-    shutil.rmtree(test_project_path / "dist")
+    delete_files(test_project_path / "build")
+    delete_files(test_project_path / "dist")
 
 
 def test_add_readme_tests():

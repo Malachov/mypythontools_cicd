@@ -1,7 +1,7 @@
 """Module with functions for 'tests' subpackage."""
 
 from __future__ import annotations
-from typing import Sequence
+from typing import Sequence, cast
 from pathlib import Path
 import sys
 import warnings
@@ -11,10 +11,13 @@ import numpy as np
 import mylogging
 
 
-from mypythontools.paths import PROJECT_PATHS, validate_path, PathLike
+from mypythontools.paths import validate_path, PathLike
 from mypythontools.terminal import get_console_str_with_quotes, terminal_do_command
 from mypythontools.misc import delete_files
+
 from .. import venvs
+from ..misc import get_requirements_files
+from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 
 def setup_tests(
@@ -70,7 +73,7 @@ def run_tests(
     stop_on_first_error: bool = True,
     virtualenvs: None | Sequence[PathLike] = sys.prefix,
     wsl_virtualenvs: None | Sequence[PathLike] = None,
-    sync_requirements: None | Literal["infer"] | PathLike | Sequence[PathLike] = "infer",
+    sync_requirements: None | Literal["infer"] | PathLike | Sequence[PathLike] = "requirements.txt",
     verbosity: Literal[0, 1, 2] = 1,
     extra_args: None | list = None,
 ) -> None:
@@ -99,7 +102,7 @@ def run_tests(
         sync_requirements (None | Literal["infer"] | PathLike | Sequence[PathLike], optional): If using
             `virtualenvs` define what libraries will be installed by path to requirements.txt. Can also be a
             list of more files e.g ``["requirements.txt", "requirements_dev.txt"]``. If "infer", autodetected
-            (all requirements). Defaults to "infer".
+            (all requirements). Defaults to "requirements.txt".
         verbosity (Literal[0, 1, 2], optional): Whether print details on errors or keep silent. If 0, no
             details, parameters `-q and `--tb=no` are added. if 1, some details are added --tb=short. If 2,
             more details are printed (default --tb=auto) Defaults to 1.
@@ -152,8 +155,9 @@ def run_tests(
 
     test_command = " ".join(complete_args)
 
-    if sync_requirements and isinstance(sync_requirements, PathLike):
+    if sync_requirements and sync_requirements != "infer" and isinstance(sync_requirements, PathLike):
         sync_requirements = [sync_requirements]
+    sync_requirements = cast(list, sync_requirements)
 
     if virtualenvs:
         test_commands = []
@@ -165,7 +169,9 @@ def run_tests(
                 if verbosity:
                     print(f"\tSyncing requirements in venv '{my_venv.venv_path.name}' for tests")
                 my_venv.sync_requirements(sync_requirements, verbose)
-
+            # To be able to not install dev requirements in older python venv, pytest is installed.
+            # Usually just respond with Requirements already satisfied.
+            my_venv.install_library("pytest")
             test_commands.append(f"{my_venv.activate_command} && {test_command}")
     else:
         test_commands = [test_command]
@@ -189,9 +195,15 @@ def run_tests(
                 print(f"\nTesting wsl_virtualenv {i}.\n")
 
             if sync_requirements:
-                for i in sync_requirements:
+                terminal_do_command(
+                    "wsl venv/linux/bin/pip install pytest",
+                    verbose=verbose,
+                    error_header="Installing libraries in wsl failed.",
+                )
+                requirements_parsed = get_requirements_files(sync_requirements)
+                for j in requirements_parsed:
                     terminal_do_command(
-                        f"wsl venv/linux/bin/pip install -r {validate_path(i)}",
+                        f"wsl venv/linux/bin/pip install -r {validate_path(j).relative_to(Path.cwd()).as_posix()}",
                         verbose=verbose,
                         error_header="Installing libraries in wsl failed.",
                     )

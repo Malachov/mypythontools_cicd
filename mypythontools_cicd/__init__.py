@@ -64,26 +64,54 @@ which is used mostly in PyVueEel applications.
 ----------------------------
 Build package and push it to PyPi,
 
+:py:mod:`mypythontools_cicd.misc`
+----------------------------
+Miscellaneous functions that are too small to have own subpackage.
+
 :py:mod:`mypythontools_cicd.project_utils`
 ----------------------------
-In project utils you can find many functions for CI/CD like formatting, docs creation, version setting etc.
-There is also pipelining function that will call them in defined order.
+
+:py:mod:`mypythontools_cicd.project_paths`
+----------------------------
+Subpackage where you can get paths used in your project (path to README,  __init__.py etc.).
+
 
 :py:mod:`mypythontools_cicd.tests`
 ----------------------------
 Runs tests in more venvs with different python versions, also with wsl linux if configured and create coverage.
+
+Mypythontools
+==================
+
+There is extra library in separate repository which is not about CICD, but normal python helpers.
+
+https://github.com/Malachov/mypythontools
+
+This can help you with a lot of stuff around CICD like getting project paths, generating docs, testing,
+deploying to PyPi etc.
+
+**subpackages**
+
+- config
+- misc
+- paths
+- plots
+- property
+- terminal
+- type_hints
 """
 import mylogging as __mylogging
 
 from mypythontools_cicd import build
 from mypythontools_cicd import deploy
+from mypythontools_cicd import project_paths
 from mypythontools_cicd import project_utils
 from mypythontools_cicd import tests
 from mypythontools_cicd import venvs
 
-__all__ = ["build", "deploy", "project_utils", "tests", "venvs"]
+__all__ = ["build", "deploy", "project_paths", "project_utils", "tests", "venvs"]
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 __author__ = "Daniel Malachov"
 __license__ = "MIT"

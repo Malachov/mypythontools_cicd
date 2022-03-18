@@ -19,10 +19,10 @@ if __name__ == "__main__":
     project_utils_pipeline(
         reformat=True,
         test=True,
-        test_options={"virtualenvs": ["venv/37", "venv/310"], "wsl_virtualenvs": "venv/linux"},
+        test_options={"virtualenvs": ["venv/37", "venv/310"]},
         version="increment",
         docs=True,
-        sync_requirements=False,
+        sync_requirements="requirements.txt",
         commit_and_push_git=True,
         commit_message="New commit",
         tag="__version__",

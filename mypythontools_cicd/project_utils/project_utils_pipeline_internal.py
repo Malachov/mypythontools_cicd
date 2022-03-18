@@ -13,7 +13,7 @@ from .. import tests
 from .. import venvs
 from mypythontools.config import ConfigBase, MyProperty
 from mypythontools.misc import GLOBAL_VARS, EMOJIS, print_progress
-from mypythontools.paths import PROJECT_PATHS, PathLike
+from mypythontools.paths import PathLike
 from mypythontools.types import validate_sequence
 from ..deploy import deploy_to_pypi
 from .project_utils_functions import (
@@ -26,6 +26,8 @@ from .project_utils_functions import (
 
 # Lazy loaded
 # from git import Repo
+
+from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 
 class PipelineConfig(ConfigBase):

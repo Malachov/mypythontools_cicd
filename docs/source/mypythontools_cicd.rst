@@ -14,6 +14,8 @@ Subpackages
 
    mypythontools_cicd.build
    mypythontools_cicd.deploy
+   mypythontools_cicd.misc
+   mypythontools_cicd.project_paths
    mypythontools_cicd.project_utils
    mypythontools_cicd.tests
    mypythontools_cicd.venvs

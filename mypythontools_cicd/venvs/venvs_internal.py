@@ -11,7 +11,7 @@ import sys
 
 from typing_extensions import Literal
 
-from mypythontools.paths import PROJECT_PATHS, validate_path, PathLike
+from mypythontools.paths import PathLike
 from mypythontools.terminal import (
     get_console_str_with_quotes,
     terminal_do_command,
@@ -19,6 +19,9 @@ from mypythontools.terminal import (
     PYTHON,
     EXECUTABLE,
 )
+
+from ..misc import get_requirements_files
+from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 
 class Venv:
@@ -120,18 +123,7 @@ class Venv:
             verbose (bool, optional): If True, result of terminal command will be printed to console.
                 Defaults to False.
         """
-        if requirements == "infer":
-
-            requirements = []
-
-            for i in PROJECT_PATHS.root.glob("*"):
-                if "requirements" in i.as_posix().lower() and i.suffix == ".txt":
-                    requirements.append(i)
-        else:
-            if isinstance(requirements, PathLike):
-                requirements = [requirements]
-
-            requirements = [validate_path(req) for req in requirements]
+        requirements = get_requirements_files(requirements)
 
         requirements_content = ""
 

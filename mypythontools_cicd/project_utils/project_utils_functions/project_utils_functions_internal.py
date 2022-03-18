@@ -3,8 +3,9 @@
 from __future__ import annotations
 from typing import Sequence
 import ast
+import re
 
-from mypythontools.paths import PROJECT_PATHS, validate_path, PathLike
+from mypythontools.paths import validate_path, PathLike
 from mypythontools.types import validate_sequence
 from mypythontools.terminal import (
     get_console_str_with_quotes,
@@ -17,6 +18,8 @@ from mypythontools.misc import (
 
 # Lazy loaded
 # from git import Repo
+
+from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 
 def reformat_with_black(
@@ -81,6 +84,20 @@ def git_push(
         raise RuntimeError("Push to git failed. Version restored and created git tag deleted.") from err
 
 
+def validate_version(version: str):
+    """Check whether parsed version is valid.
+
+    Args:
+        version (str): E.g "1.0.1"
+
+    Returns:
+        bool: Whether is valid.
+    """
+    return version == "increment" or (
+        len(version.split(".")) == 3 and all([i.isdecimal() for i in version.split(".")])
+    )
+
+
 def set_version(
     version: str = "increment",
     init_path: None | PathLike = None,
@@ -99,9 +116,7 @@ def set_version(
     """
     init_path = validate_path(init_path) if init_path else PROJECT_PATHS.init
 
-    is_valid = version == "increment" or (
-        len(version.split(".")) == 3 and all([i.isdecimal() for i in version.split(".")])
-    )
+    is_valid = validate_version(version)
 
     if not is_valid:
         raise ValueError(
@@ -163,14 +178,12 @@ def get_version(init_path: None | PathLike = None) -> str:
     init_path = validate_path(init_path) if init_path else PROJECT_PATHS.init
 
     with open(init_path.as_posix(), "r") as init_file:
+        version = re.findall('__version__ = "(.*)"', init_file.read())[0]
 
-        for line in init_file:
-
-            if line.startswith("__version__"):
-                delim = '"' if '"' in line else "'"
-                return line.split(delim)[1]
-
-        raise ValueError("__version__ variable not found in __init__.py.")
+    if validate_version(version):
+        return version
+    else:
+        raise RuntimeError("Version not found in __init__.py")
 
 
 def docs_regenerate(
@@ -202,7 +215,8 @@ def docs_regenerate(
             testing reasons. Defaults to True.
         keep (Sequence[PathLike], optional): List of files and folder names that will not be
             deleted. Deletion is because if some file would be renamed or deleted, rst docs would still stay.
-            Glob-style patterns can be used. Defaults to None.
+            Glob-style patterns can be used, but it's not recursive, but only first level of source folder is
+            used. Defaults to None.
         ignore (Sequence[PathLike], optional): Whether ignore some files from generated rst files. For example
             It can be python modules that will be ignored or it can be rst files created, that will be
             deleted. to have no errors in sphinx build for unused modules, or for internal modules. Glob-style
@@ -235,7 +249,7 @@ def docs_regenerate(
         "index.rst",
         "_static",
         "_templates",
-        "content/**",
+        "content",
     ]
     ignore_list = [*ignore]
 
@@ -263,6 +277,7 @@ def docs_regenerate(
                 delete_files(file)
 
     if build_locally:
+        delete_files
         terminal_do_command(
             "make html", cwd=docs_path, verbose=verbose, error_header="Sphinx build failed.", shell=True
         )

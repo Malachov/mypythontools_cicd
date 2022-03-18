@@ -3,6 +3,7 @@ mylogging>=4.0.2
 mydatapreprocessing>=2.0.9
 bandit
 black
+build
 GitPython
 line_profiler
 memory_profiler

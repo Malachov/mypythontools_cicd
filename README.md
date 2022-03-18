@@ -30,11 +30,16 @@ pip install mypythontools
 Package is divided into several subpackages
 
 ### build
-Build your application to .exe with pyinstaller. It also builds javascript frontend with npm build if configured,
-which is used mostly in PyVueEel applications.
+Build your application to .exe with pyinstaller. It also builds javascript frontend with npm build if configured, which is used mostly in PyVueEel applications.
 
 ### deploy
-Build package and push it to PyPi,
+Build package and push it to PyPi.
+
+### misc
+Miscellaneous functions that are too small to have own subpackage.
+
+### project_paths
+Subpackage where you can get paths used in your project (path to README,  \_\_init__.py etc.).
 
 ### project_utils
 In project utils you can find many functions for CI/CD like formatting, docs creation, version setting etc.
@@ -42,3 +47,22 @@ There is also pipelining function that will call them in defined order.
 
 ### tests
 Runs tests in more venvs with different python versions, also with wsl linux if configured and create coverage.
+
+## Mypythontools
+
+There is extra library in separate repository which is not about CICD, but normal python helpers.
+
+https://github.com/Malachov/mypythontools
+
+This can help you with a lot of stuff around CICD like getting project paths, generating docs, testing,
+deploying to PyPi etc.
+
+**subpackages**
+
+- config
+- misc
+- paths
+- plots
+- property
+- terminal
+- type_hints
