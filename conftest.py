@@ -13,7 +13,7 @@ if root not in sys.path:
     sys.path.insert(0, root.as_posix())
 
 from mypythontools_cicd.tests import setup_tests
-import mypythontools
+from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 setup_tests(matplotlib_test_backend=True)
 
@@ -29,7 +29,7 @@ def before_test():
     cwd_backup = Path.cwd()
 
     os.chdir(test_project_path.as_posix())
-    mypythontools.paths.PROJECT_PATHS.reset_paths()
+    PROJECT_PATHS.reset_paths()
 
     yield
 
