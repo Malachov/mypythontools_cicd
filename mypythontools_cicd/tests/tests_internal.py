@@ -74,7 +74,7 @@ def run_tests(
     stop_on_first_error: bool = True,
     virtualenvs: None | Sequence[PathLike] = sys.prefix,
     wsl_virtualenvs: None | Sequence[PathLike] = None,
-    sync_requirements: None | Literal["infer"] | PathLike | Sequence[PathLike] = "requirements.txt",
+    sync_requirements: None | Literal["infer"] | PathLike | Sequence[PathLike] = "infer",
     verbosity: Literal[0, 1, 2] = 1,
     extra_args: None | list = None,
 ) -> None:
@@ -103,7 +103,7 @@ def run_tests(
         sync_requirements (None | Literal["infer"] | PathLike | Sequence[PathLike], optional): If using
             `virtualenvs` define what libraries will be installed by path to requirements.txt. Can also be a
             list of more files e.g ``["requirements.txt", "requirements_dev.txt"]``. If "infer", autodetected
-            (all requirements). Defaults to "requirements.txt".
+            (all requirements). Defaults to "infer".
         verbosity (Literal[0, 1, 2], optional): Whether print details on errors or keep silent. If 0, no
             details, parameters `-q and `--tb=no` are added. if 1, some details are added --tb=short. If 2,
             more details are printed (default --tb=auto) Defaults to 1.
