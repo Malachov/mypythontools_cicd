@@ -127,7 +127,7 @@ class PipelineConfig(ConfigBase):
 
     @MyProperty
     @staticmethod
-    def sync_requirements() -> bool | PathLike:
+    def sync_requirements() -> bool | PathLike | Sequence[PathLike]:
         """Check requirements.txt and update all the libraries.
 
         Type:
@@ -136,7 +136,7 @@ class PipelineConfig(ConfigBase):
         Default:
             False
 
-        You can use path to requirements. If True, then path is inferred.
+        You can use path to requirements, list of paths or bool value. If True, then path is inferred.
         """
         return False
 
@@ -250,7 +250,7 @@ def project_utils_pipeline(
     test_options: None | dict[str, Sequence[PathLike]] | dict[str, Any] = None,
     version: None | str = "increment",
     docs: bool = True,
-    sync_requirements: bool | PathLike = False,
+    sync_requirements: bool | PathLike | Sequence[PathLike] = False,
     commit_and_push_git: bool = True,
     commit_message: str = "New commit",
     tag: str = "__version__",
@@ -298,7 +298,7 @@ def project_utils_pipeline(
         docs(bool, optional): Whether generate sphinx apidoc and generate rst files for documentation.
             Some files in docs source can be deleted - check `docs` docstrings for details.
             Defaults to True.
-        sync_requirements(bool | PathLike, optional): Check requirements.txt and update all the libraries.
+        sync_requirements(bool | PathLike | Sequence[PathLike], optional): Check requirements.txt and update all the libraries.
             You can use path to requirements. If True, then path is inferred. Defaults to False.
         commit_and_push_git (bool, optional): Whether push repository on git with commit_message, tag and tag
             message. Defaults to True.

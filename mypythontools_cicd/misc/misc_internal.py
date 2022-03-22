@@ -3,6 +3,7 @@
 from __future__ import annotations
 from typing import Sequence
 from pathlib import Path
+import os
 
 from typing_extensions import Literal
 from mypythontools.paths import validate_path, PathLike
@@ -29,7 +30,7 @@ def get_requirements_files(requirements: Literal["infer"] | PathLike | Sequence[
             if "requirements" in i.as_posix().lower() and i.suffix == ".txt":
                 requirements_parsed.append(i)
     else:
-        if isinstance(requirements, PathLike):
+        if isinstance(requirements, (Path, str, os.PathLike)):
             requirements = [requirements]
 
         requirements_parsed = [validate_path(req) for req in requirements]
