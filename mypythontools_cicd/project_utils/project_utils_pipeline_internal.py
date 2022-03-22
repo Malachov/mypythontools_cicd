@@ -7,8 +7,6 @@ import sys
 
 from typing_extensions import Literal
 
-import mylogging
-
 from .. import tests
 from .. import venvs
 from mypythontools.config import ConfigBase, MyProperty
@@ -127,18 +125,18 @@ class PipelineConfig(ConfigBase):
 
     @MyProperty
     @staticmethod
-    def sync_requirements() -> bool | PathLike | Sequence[PathLike]:
+    def sync_requirements() -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
         """Check requirements.txt and update all the libraries.
 
         Type:
-            bool | PathLike
+            None | Literal["infer"] | PathLike | Sequence[PathLike]
 
         Default:
-            False
+            None
 
         You can use path to requirements, list of paths or bool value. If True, then path is inferred.
         """
-        return False
+        return None
 
     @MyProperty
     @staticmethod
@@ -250,7 +248,7 @@ def project_utils_pipeline(
     test_options: None | dict[str, Sequence[PathLike]] | dict[str, Any] = None,
     version: None | str = "increment",
     docs: bool = True,
-    sync_requirements: bool | PathLike | Sequence[PathLike] = False,
+    sync_requirements: None | Literal["infer"] | PathLike | Sequence[PathLike] = None,
     commit_and_push_git: bool = True,
     commit_message: str = "New commit",
     tag: str = "__version__",
@@ -298,8 +296,8 @@ def project_utils_pipeline(
         docs(bool, optional): Whether generate sphinx apidoc and generate rst files for documentation.
             Some files in docs source can be deleted - check `docs` docstrings for details.
             Defaults to True.
-        sync_requirements(bool | PathLike | Sequence[PathLike], optional): Check requirements.txt and update all the libraries.
-            You can use path to requirements. If True, then path is inferred. Defaults to False.
+        sync_requirements(None | Literal["infer"] | PathLike | Sequence[PathLike], optional): Check
+            requirements.txt and update all the libraries. Defaults to False.
         commit_and_push_git (bool, optional): Whether push repository on git with commit_message, tag and tag
             message. Defaults to True.
         commit_message (str, optional): Git message. Defaults to 'New commit'.
@@ -356,7 +354,7 @@ def project_utils_pipeline(
                 "reformat": False,
                 "test": False,
                 "docs": False,
-                "sync_requirements": False,
+                "sync_requirements": None,
                 "commit_and_push_git": False,
                 "deploy": False,
                 "version": None,
@@ -402,12 +400,11 @@ def project_utils_pipeline(
     if config.sync_requirements:
         print_progress("Syncing requirements", progress_is_printed)
 
-        sync_requirements = "infer" if config.sync_requirements is True else config.sync_requirements
         if not venvs.is_venv:
             raise RuntimeError("'sync_requirements' available only if using virtualenv.")
         my_venv = venvs.Venv(sys.prefix)
         my_venv.create()
-        my_venv.sync_requirements(sync_requirements, verbose=verbose)
+        my_venv.sync_requirements(config.sync_requirements, verbose=verbose)
 
     if config.test:
         print_progress("Testing", progress_is_printed)
