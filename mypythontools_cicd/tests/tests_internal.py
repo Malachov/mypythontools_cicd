@@ -5,6 +5,7 @@ from typing import Sequence, cast
 from pathlib import Path
 import sys
 import warnings
+import os
 
 from typing_extensions import Literal
 import numpy as np
@@ -155,7 +156,11 @@ def run_tests(
 
     test_command = " ".join(complete_args)
 
-    if sync_requirements and sync_requirements != "infer" and isinstance(sync_requirements, PathLike):
+    if (
+        sync_requirements
+        and sync_requirements != "infer"
+        and isinstance(sync_requirements, (Path, str, os.PathLike))
+    ):
         sync_requirements = [sync_requirements]
     sync_requirements = cast(list, sync_requirements)
 
