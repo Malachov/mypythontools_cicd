@@ -12,7 +12,7 @@ import sys
 from typing_extensions import Literal
 
 from mypythontools.paths import PathLike
-from mypythontools.terminal import (
+from mypythontools.system import (
     get_console_str_with_quotes,
     terminal_do_command,
     SHELL_AND,

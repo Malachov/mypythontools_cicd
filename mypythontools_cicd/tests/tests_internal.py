@@ -13,7 +13,7 @@ import mylogging
 
 
 from mypythontools.paths import validate_path, PathLike
-from mypythontools.terminal import get_console_str_with_quotes, terminal_do_command
+from mypythontools.system import get_console_str_with_quotes, terminal_do_command
 from mypythontools.misc import delete_files
 
 from .. import venvs
