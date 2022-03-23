@@ -207,7 +207,7 @@ def run_tests(
 
             if sync_requirements:
                 terminal_do_command(
-                    "wsl venv/linux/bin/pip install pytest",
+                    f"wsl {i}/bin/pip install pytest",
                     verbose=verbose,
                     error_header="Installing libraries in wsl failed.",
                 )
@@ -221,13 +221,13 @@ def run_tests(
                     req_path = validate_path(j).relative_to(Path.cwd()).as_posix()
 
                     terminal_do_command(
-                        f"wsl venv/linux/bin/pip install -r {req_path} --upgrade",
+                        f"wsl {i}/bin/pip install -r {req_path} --upgrade",
                         verbose=verbose,
                         error_header="Installing libraries in wsl failed.",
                     )
 
             terminal_do_command(
-                f"wsl source venv/linux/bin/activate && wsl {i}/bin/pytest",
+                f"wsl source {i}/bin/activate && wsl {i}/bin/pytest",
                 cwd=tested_path.as_posix(),
                 verbose=verbose,
                 error_header="Tests failed.",
