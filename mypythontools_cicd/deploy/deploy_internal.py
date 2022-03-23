@@ -7,8 +7,8 @@ import shutil
 import mylogging
 
 from mypythontools.paths import validate_path, PathLike
-from mypythontools.misc import check_script_is_available, delete_files
-from mypythontools.terminal import terminal_do_command, PYTHON
+from mypythontools.misc import delete_files
+from mypythontools.system import check_script_is_available, terminal_do_command, PYTHON
 
 from mypythontools_cicd.project_paths import PROJECT_PATHS
 

@@ -7,14 +7,9 @@ import re
 
 from mypythontools.paths import validate_path, PathLike
 from mypythontools.types import validate_sequence
-from mypythontools.terminal import (
-    get_console_str_with_quotes,
-    terminal_do_command,
-)
-from mypythontools.misc import (
-    check_script_is_available,
-    delete_files,
-)
+
+from mypythontools.misc import delete_files
+from mypythontools.system import check_script_is_available, get_console_str_with_quotes, terminal_do_command
 
 # Lazy loaded
 # from git import Repo
