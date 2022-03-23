@@ -63,6 +63,7 @@ def git_push(
             Defaults to False.
     """
     import git.repo
+    import git.exc
 
     git_command = f"git add . && git commit -m {get_console_str_with_quotes(commit_message)} && git push"
 
@@ -72,8 +73,11 @@ def git_push(
     if tag:
         if not tag_message:
             tag_message = "New version"
+        try:
+            git.repo.Repo(PROJECT_PATHS.root.as_posix()).create_tag(tag, message=tag_message)
+        except git.exc.GitCommandError as err:
+            raise RuntimeError("Tag creation failed. It can be because such a tag already exists.") from err
 
-        git.repo.Repo(PROJECT_PATHS.root.as_posix()).create_tag(tag, message=tag_message)
         git_command += " --follow-tags"
 
     try:

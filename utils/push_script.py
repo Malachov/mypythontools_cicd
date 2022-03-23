@@ -26,7 +26,7 @@ if __name__ == "__main__":
         },
         version="increment",
         docs=True,
-        sync_requirements="requirements.txt",
+        sync_requirements=None,
         commit_and_push_git=True,
         commit_message="New commit",
         tag="__version__",
@@ -34,3 +34,5 @@ if __name__ == "__main__":
         deploy=True,
         allowed_branches=("master", "main"),
     )
+
+    # project_utils_pipeline(do_only="commit_and_push_git")

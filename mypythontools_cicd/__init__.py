@@ -100,8 +100,6 @@ deploying to PyPi etc.
 - terminal
 - type_hints
 """
-import mylogging as __mylogging
-
 from mypythontools_cicd import build
 from mypythontools_cicd import deploy
 from mypythontools_cicd import project_paths
@@ -111,10 +109,8 @@ from mypythontools_cicd import venvs
 
 __all__ = ["build", "deploy", "project_paths", "project_utils", "tests", "venvs"]
 
-__version__ = "0.0.9"
+__version__ = "0.0.10"
 
 __author__ = "Daniel Malachov"
 __license__ = "MIT"
 __email__ = "malachovd@seznam.cz"
-
-__mylogging.my_traceback.enhance_excepthook()

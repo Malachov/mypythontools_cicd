@@ -451,10 +451,10 @@ def project_utils_pipeline(
             print_progress("Deploying to PyPi", progress_is_printed)
             deploy_to_pypi()
 
-    except Exception:  # pylint: disable=broad-except
+    except Exception as err:  # pylint: disable=broad-except
         raise RuntimeError(
             f"{3 * EMOJIS.DISAPPOINTMENT} Deploy failed {3 * EMOJIS.DISAPPOINTMENT} \n\n"
             "Already pushed to repository. Deploy manually. Version already changed.",
-        )
+        ) from err
 
     print_progress(f"{3 * EMOJIS.PARTY} Finished {3 * EMOJIS.PARTY}", True)
