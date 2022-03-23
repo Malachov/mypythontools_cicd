@@ -97,9 +97,7 @@ def run_tests(
             current venv, use `sys.prefix`. If there is no venv, it's created with default virtualenv version.
             Defaults to sys.prefix.
         wsl_virtualenvs (None | Sequence[PathLike], optional): If want to test Linux python from windows,
-            it's possible with wsl. Just define path to venvs. Beware, that libraries are not synced for wsl
-            and that for example python subprocess.run can fails in tests as called from windows.
-            Defaults to None
+            it's possible with wsl. Just define path to venvs. It has to be relative paths. Defaults to None
         sync_requirements (None | Literal["infer"] | PathLike | Sequence[PathLike], optional): If using
             `virtualenvs` define what libraries will be installed by path to requirements.txt. Can also be a
             list of more files e.g ``["requirements.txt", "requirements_dev.txt"]``. If "infer", autodetected
@@ -198,6 +196,14 @@ def run_tests(
         for i in wsl_virtualenvs:
             if verbosity:
                 print(f"\nTesting wsl_virtualenv {i}.\n")
+                print(f"\tPreparing environment for {i}.")
+
+            if not Path(i).exists():
+                terminal_do_command(
+                    f"wsl virtualenv {i}",
+                    verbose=verbose,
+                    error_header="Creating environment failed.",
+                )
 
             if sync_requirements:
                 terminal_do_command(
@@ -206,9 +212,16 @@ def run_tests(
                     error_header="Installing libraries in wsl failed.",
                 )
                 requirements_parsed = get_requirements_files(sync_requirements)
+
+                if verbosity:
+                    print(f"\tRunning tests for {i}.")
+
                 for j in requirements_parsed:
+
+                    req_path = validate_path(j).relative_to(Path.cwd()).as_posix()
+
                     terminal_do_command(
-                        f"wsl venv/linux/bin/pip install -r {validate_path(j).relative_to(Path.cwd()).as_posix()}",
+                        f"wsl venv/linux/bin/pip install -r {req_path} --upgrade",
                         verbose=verbose,
                         error_header="Installing libraries in wsl failed.",
                     )

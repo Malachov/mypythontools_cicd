@@ -109,7 +109,7 @@ from mypythontools_cicd import venvs
 
 __all__ = ["build", "deploy", "project_paths", "project_utils", "tests", "venvs"]
 
-__version__ = "0.0.12"
+__version__ = "0.0.13"
 
 __author__ = "Daniel Malachov"
 __license__ = "MIT"
