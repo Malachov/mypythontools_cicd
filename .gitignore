@@ -9,7 +9,7 @@ package-lock.json
 
 web_builded/
 
-!content\project-starter\.vscode
+!content/project-starter/.vscode
 
 # IDE
 .vscode/
@@ -33,6 +33,7 @@ node_modules/
 tempCodeRunnerFile.py
 .Python
 build/
+!/mypythontools_cicd/build
 develop-eggs/
 dist/
 downloads/

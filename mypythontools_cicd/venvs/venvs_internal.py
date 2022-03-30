@@ -17,7 +17,6 @@ from mypythontools.system import (
     terminal_do_command,
     SHELL_AND,
     PYTHON,
-    EXECUTABLE,
 )
 
 from ..misc import get_requirements_files
@@ -77,9 +76,7 @@ class Venv:
             self.executable = self.venv_path / "bin" / "python"
             self.executable_str = get_console_str_with_quotes((self.venv_path / "bin" / "python").as_posix())
             self.create_command = f"python3 -m virtualenv {self.venv_path_console_str}"
-            self.activate_command = (
-                f"source {get_console_str_with_quotes(self.venv_path / 'bin' / 'activate')}"
-            )
+            self.activate_command = f". {get_console_str_with_quotes(self.venv_path / 'bin' / 'activate')}"
             scripts_path = self.venv_path / "bin"
 
         self.installed = True if (self.executable).exists() else False
@@ -123,6 +120,7 @@ class Venv:
             verbose (bool, optional): If True, result of terminal command will be printed to console.
                 Defaults to False.
         """
+        self.install_library("pip-tools")
         requirements = get_requirements_files(requirements)
 
         requirements_content = ""
@@ -130,8 +128,6 @@ class Venv:
         for i in requirements:
             with open(i, "r") as req:
                 requirements_content = requirements_content + "\n" + req.read()
-
-        # requirements_content = f"{requirements_content}\nmypythontools\npytest"
 
         requirements_all_path = self.venv_path / "requirements_all.in"
         requirements_all_console_path_str = get_console_str_with_quotes(requirements_all_path)
@@ -147,18 +143,13 @@ class Venv:
             f"{freezed_requirements_console_path_str} --quiet"
         )
 
-        pip_tools_install_msg = "Library necessary for syncing requirements 'pip-tools' failed to install."
-
         sync_commands = {
-            "pip install pip-tools": pip_tools_install_msg,
-            pip_compile_command: "Creading joined requirements.txt file failed.",
+            pip_compile_command: "Creating joined requirements.txt file failed.",
             f"pip-sync {freezed_requirements_console_path_str} --quiet": "Requirements syncing failed.",
         }
 
         for i, j in sync_commands.items():
-            terminal_do_command(
-                f"{self.activate_command} {SHELL_AND} {i}", shell=True, verbose=verbose, error_header=j
-            )
+            terminal_do_command(f"{self.activate_command} {SHELL_AND} {i}", verbose=verbose, error_header=j)
 
     def list_packages(self) -> str:
         """Get list of installed libraries in the venv.
@@ -171,7 +162,6 @@ class Venv:
             capture_output=True,
             check=True,
             shell=True,
-            executable=EXECUTABLE,
         )
         output_str = result.stdout.decode().strip("\r\n")
 

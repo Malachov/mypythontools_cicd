@@ -11,10 +11,10 @@ from typing_extensions import Literal
 import numpy as np
 import mylogging
 
-
 from mypythontools.paths import validate_path, PathLike
 from mypythontools.system import get_console_str_with_quotes, terminal_do_command
-from mypythontools.misc import delete_files
+from mypythontools.misc import delete_files, GLOBAL_VARS
+import mypythontools.system.system_internal
 
 from .. import venvs
 from ..misc import get_requirements_files
@@ -117,6 +117,15 @@ def run_tests(
     Example:
         ``run_tests(verbosity=2)``
     """
+    settings = {
+        "tested_path": tested_path,
+        "tests_path": tests_path,
+        "test_coverage": test_coverage,
+        "stop_on_first_error": stop_on_first_error,
+        "sync_requirements": sync_requirements,
+        "extra_args": extra_args,
+    }
+
     tested_path = validate_path(tested_path) if tested_path else PROJECT_PATHS.root
     tests_path = validate_path(tests_path) if tests_path else PROJECT_PATHS.tests
     tested_path_str = get_console_str_with_quotes(tested_path)
@@ -191,43 +200,21 @@ def run_tests(
         delete_files(".coverage")
 
     if wsl_virtualenvs:
-        test_commands = []
         wsl_virtualenvs = [wsl_virtualenvs] if isinstance(wsl_virtualenvs, (str, Path)) else wsl_virtualenvs
+
         for i in wsl_virtualenvs:
-            if verbosity:
-                print(f"\nTesting wsl_virtualenv {i}.\n")
-                print(f"\tPreparing environment for {i}.")
-
-            if not Path(i).exists():
-                terminal_do_command(
-                    f"wsl virtualenv {i}",
-                    verbose=verbose,
-                    error_header="Creating environment failed.",
-                )
-
-            if sync_requirements:
-                terminal_do_command(
-                    f"wsl {i}/bin/pip install pytest",
-                    verbose=verbose,
-                    error_header="Installing libraries in wsl failed.",
-                )
-                requirements_parsed = get_requirements_files(sync_requirements)
-
-                if verbosity:
-                    print(f"\tRunning tests for {i}.")
-
-                for j in requirements_parsed:
-
-                    req_path = validate_path(j).relative_to(Path.cwd()).as_posix()
-
-                    terminal_do_command(
-                        f"wsl {i}/bin/pip install -r {req_path} --upgrade",
-                        verbose=verbose,
-                        error_header="Installing libraries in wsl failed.",
-                    )
+            settings["virtualenvs"] = [i]
 
             terminal_do_command(
-                f"wsl source {i}/bin/activate && wsl {i}/bin/pytest",
+                f"wsl {i}/bin/python -m pip install mypythontools_cicd",
+                verbose=verbose,
+                error_header=f"Installing pytest to wsl venv {i} failed.",
+            )
+            if verbosity:
+                print(f"\tPreparing wsl environment.")
+
+            terminal_do_command(
+                f'wsl {i}/bin/python -m mypythontools_cicd --do_only test --test_options "{settings}"',
                 cwd=tested_path.as_posix(),
                 verbose=verbose,
                 error_header="Tests failed.",

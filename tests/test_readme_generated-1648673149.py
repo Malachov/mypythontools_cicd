@@ -1,4 +1,4 @@
-"""pytest file built from c:/Users/Turtor/ownCloud/Github/mypythontools_cicd/README.md"""
+"""pytest file built from /mnt/c/Users/Turtor/ownCloud/Github/mypythontools_cicd/README.md"""
 
 
 def test_nothing_passes():

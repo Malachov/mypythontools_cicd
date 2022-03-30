@@ -9,6 +9,8 @@ if some phase fails, you know it soon and before pushing to repo.
 
 You can also import mypythontools in your CI/CD and use it there of course.
 
+If you are not sure whether the structure of your app will work with this code, check `project-starter-cookiecutter` on [GitHub](https://github.com/Malachov/project-starter-cookiecutter).
+
 ## Links
 
 Official documentation - [readthedocs](https://mypythontools.readthedocs.io/)

@@ -34,6 +34,9 @@ if some phase fails, you know it soon and before pushing to repo.
 
 You can also import mypythontools in your CI/CD and use it there of course.
 
+If you are not sure whether the structure of your app will work with this code, check
+`project-starter-cookiecutter` on [GitHub](https://github.com/Malachov/project-starter-cookiecutter).
+
 Links
 -----
 
@@ -109,7 +112,7 @@ from mypythontools_cicd import venvs
 
 __all__ = ["build", "deploy", "project_paths", "project_utils", "tests", "venvs"]
 
-__version__ = "0.0.14"
+__version__ = "0.0.15"
 
 __author__ = "Daniel Malachov"
 __license__ = "MIT"
