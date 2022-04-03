@@ -32,7 +32,6 @@ class PipelineConfig(ConfigBase):
     """Allow to setup CICD pipeline."""
 
     @MyProperty
-    @staticmethod
     def do_only() -> Literal[
         None, "reformat", "test", "docs", "sync_requirements", "commit_and_push_git", "deploy"
     ]:

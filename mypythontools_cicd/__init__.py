@@ -28,6 +28,7 @@
     :target: https://codecov.io/gh/Malachov/mypythontools_cicd
     :alt: Codecov
 
+`CNN <http://cnn.com>`_
 
 Why to use this and not Travis or Circle CI? It's local and it's fast. You can setup it as a task in IDE and
 if some phase fails, you know it soon and before pushing to repo.
@@ -35,14 +36,14 @@ if some phase fails, you know it soon and before pushing to repo.
 You can also import mypythontools in your CI/CD and use it there of course.
 
 If you are not sure whether the structure of your app will work with this code, check
-`project-starter-cookiecutter` on [GitHub](https://github.com/Malachov/project-starter-cookiecutter).
+`project-starter-cookiecutter` on https://github.com/Malachov/project-starter-cookiecutter
 
 Links
 -----
 
-Official documentation - [readthedocs](https://mypythontools_cicd.readthedocs.io/)
+Official documentation - https://mypythontools_cicd.readthedocs.io
 
-Official repo - [GitHub](https://github.com/Malachov/mypythontools_cicd)
+Official repo - https://github.com/Malachov/mypythontools_cicd
 
 
 Installation
@@ -73,11 +74,11 @@ Miscellaneous functions that are too small to have own subpackage.
 
 :py:mod:`mypythontools_cicd.project_utils`
 ----------------------------
+Run cicd functions like formatting, testing or deploying.
 
 :py:mod:`mypythontools_cicd.project_paths`
 ----------------------------
 Subpackage where you can get paths used in your project (path to README,  __init__.py etc.).
-
 
 :py:mod:`mypythontools_cicd.tests`
 ----------------------------

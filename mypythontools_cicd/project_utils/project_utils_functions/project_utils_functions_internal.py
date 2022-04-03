@@ -9,7 +9,12 @@ from mypythontools.paths import validate_path, PathLike
 from mypythontools.types import validate_sequence
 
 from mypythontools.misc import delete_files
-from mypythontools.system import check_script_is_available, get_console_str_with_quotes, terminal_do_command
+from mypythontools.system import (
+    check_script_is_available,
+    get_console_str_with_quotes,
+    terminal_do_command,
+    SHELL_AND,
+)
 
 # Lazy loaded
 # from git import Repo
@@ -60,7 +65,7 @@ def git_push(
     import git.repo
     import git.exc
 
-    git_command = f"git add . && git commit -m {get_console_str_with_quotes(commit_message)} && git push"
+    git_command = f"git add . {SHELL_AND} git commit -m {get_console_str_with_quotes(commit_message)} {SHELL_AND} git push"
 
     if tag == "__version__":
         tag = f"v{get_version()}"
@@ -276,9 +281,12 @@ def docs_regenerate(
                 delete_files(file)
 
     if build_locally:
-        delete_files
         terminal_do_command(
-            "make html", cwd=docs_path, verbose=verbose, error_header="Sphinx build failed.", shell=True
+            f"make clean {SHELL_AND} make html",
+            cwd=docs_path,
+            verbose=verbose,
+            error_header="Sphinx build failed.",
+            shell=True,
         )
 
     if git_add:
