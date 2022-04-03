@@ -51,7 +51,6 @@ class PipelineConfig(ConfigBase):
         return None
 
     @MyProperty
-    @staticmethod
     def reformat() -> bool:
         """Reformat all python files with black. Setup parameters in pyproject.toml.
 
@@ -64,7 +63,6 @@ class PipelineConfig(ConfigBase):
         return True
 
     @MyProperty
-    @staticmethod
     def test() -> bool:
         """Run pytest tests.
 
@@ -77,7 +75,6 @@ class PipelineConfig(ConfigBase):
         return True
 
     @MyProperty
-    @staticmethod
     def test_options() -> None | dict:
         """Check tests module and function run_tests for what parameters you can use.
 
@@ -93,7 +90,6 @@ class PipelineConfig(ConfigBase):
         return None
 
     @MyProperty
-    @staticmethod
     def version() -> None | str:
         """Overwrite __version__ in __init__.py.
 
@@ -109,7 +105,6 @@ class PipelineConfig(ConfigBase):
         return "increment"
 
     @MyProperty
-    @staticmethod
     def docs() -> bool:
         """Whether generate sphinx apidoc and generate rst files for documentation. Some files in docs source
         can be deleted - check `docs` docstrings for details.
@@ -123,7 +118,6 @@ class PipelineConfig(ConfigBase):
         return True
 
     @MyProperty
-    @staticmethod
     def sync_requirements() -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
         """Check requirements.txt and update all the libraries.
 
@@ -138,7 +132,6 @@ class PipelineConfig(ConfigBase):
         return None
 
     @MyProperty
-    @staticmethod
     def commit_and_push_git() -> bool:
         """Whether push to github or not.
 
@@ -151,7 +144,6 @@ class PipelineConfig(ConfigBase):
         return True
 
     @MyProperty
-    @staticmethod
     def commit_message() -> str:
         """Commit message.
 
@@ -164,7 +156,6 @@ class PipelineConfig(ConfigBase):
         return "New commit"
 
     @MyProperty
-    @staticmethod
     def tag() -> str:
         """Tag. E.g 'v1.1.2'. If '__version__', get the version.
 
@@ -177,7 +168,6 @@ class PipelineConfig(ConfigBase):
         return "__version__"
 
     @MyProperty
-    @staticmethod
     def tag_message() -> str:
         """Tag message.
 
@@ -190,7 +180,6 @@ class PipelineConfig(ConfigBase):
         return "New version"
 
     @MyProperty
-    @staticmethod
     def deploy() -> bool:
         """Deploy to PYPI.
 
@@ -205,7 +194,6 @@ class PipelineConfig(ConfigBase):
         return False
 
     @MyProperty
-    @staticmethod
     def allowed_branches() -> None | Sequence[str]:
         """Pipeline runs only on defined branches.
 
@@ -218,7 +206,6 @@ class PipelineConfig(ConfigBase):
         return ["master", "main"]
 
     @MyProperty
-    @staticmethod
     def verbosity() -> Literal[0, 1, 2]:
         """Pipeline runs only on defined branches.
 
