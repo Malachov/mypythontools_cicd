@@ -33,13 +33,20 @@ class PipelineConfig(ConfigBase):
 
     @MyProperty
     def do_only() -> Literal[
-        None, "reformat", "test", "docs", "sync_requirements", "commit_and_push_git", "deploy"
+        None,
+        "prepare_venvs",
+        "reformat",
+        "test",
+        "docs",
+        "sync_requirements",
+        "commit_and_push_git",
+        "deploy",
     ]:
         """Run just single function from pipeline, ignore the others.
 
         Type:
             Literal[
-                None, "reformat", "test", "docs", "sync_requirements", "commit_and_push_git", "deploy"
+                None, "prepare_venvs", "reformat", "test", "docs", "sync_requirements", "commit_and_push_git", "deploy"
             ]
 
         Default:
@@ -49,6 +56,30 @@ class PipelineConfig(ConfigBase):
         line entrypoint.
         """
         return None
+
+    @MyProperty
+    def prepare_venvs() -> None | list[str]:
+        """Create venvs with defined versions.
+
+        Type:
+            list[str]
+
+        Default:
+            ["3.7", "3.10", "wsl-3.7", "wsl-3.10"]
+        """
+        return ["3.7", "3.10", "wsl-3.7", "wsl-3.10"]
+
+    @MyProperty
+    def prepare_venvs_path() -> PathLike:
+        """Prepare venvs in defined path.
+
+        Type:
+            str
+
+        Default:
+            "venv"
+        """
+        return "venv"
 
     @MyProperty
     def reformat() -> bool:
@@ -78,6 +109,8 @@ class PipelineConfig(ConfigBase):
     def test_options() -> None | dict:
         """Check tests module and function run_tests for what parameters you can use.
 
+        None here means default settings.
+
         Type:
             None | dict
 
@@ -85,7 +118,7 @@ class PipelineConfig(ConfigBase):
             None
 
         For example:
-            >>> {"virtualenvs": ["venv/37", "venv/310], "test_coverage": True, "verbose": False}
+            >>> {"virtualenvs": ["venv/3.7", "venv/3.10], "test_coverage": True, "verbose": False}
         """
         return None
 
@@ -218,10 +251,16 @@ class PipelineConfig(ConfigBase):
         return 1
 
 
+DEFAULT_PIPELINE_CONFIG = PipelineConfig()
+"""Default values for pipeline. If something changes here, it will change in all the repos. You can edit any
+values in pipeline. Intellisense and help tooltip should help."""
+
+
 def project_utils_pipeline(
     config: None | PipelineConfig = None,
     do_only: Literal[
         None,
+        "prepare_venvs",
         "reformat",
         "test",
         "docs",
@@ -229,6 +268,8 @@ def project_utils_pipeline(
         "commit_and_push_git",
         "deploy",
     ] = None,
+    prepare_venvs: None | list[str] = None,
+    prepare_venvs_path: PathLike = "venv",
     reformat: bool = True,
     test: bool = True,
     test_options: None | dict[str, Sequence[PathLike]] | dict[str, Any] = None,
@@ -267,9 +308,13 @@ def project_utils_pipeline(
         config (None | PipelineConfig, optional): It is possible to configure all the params with CLI args
             from terminal. Just create script, where create config, use 'config.with_argparse()' and call
             project_utils_pipeline(config=config). Example usage 'python your_script.py --deploy True'
-        do_only (Literal[None, "reformat", "test", "docs", "sync_requirements", "commit_and_push_git", "deploy"], optional):
-            Run just single function from pipeline, ignore the others. Reason for why to call it form here and
-            not directly is to be able to use sys args or single command line entrypoint. Defaults to None.
+        do_only (Literal[None, "prepare_venvs", "reformat", "test", "docs", "sync_requirements",
+            "commit_and_push_git", "deploy"], optional): Run just single function from pipeline, ignore the
+            others. Reason for why to call it form here and not directly is to be able to use sys args or
+            single command line entrypoint. Defaults to None.
+        prepare_venvs (list[str]): List of used versions. If you want to use wsl, use `wsl-3.x`.
+            Defaults to None.
+        prepare_venvs_path (str): Where venvs will be stored. Defaults to "venv".
         reformat (bool, optional): Reformat all python files with black. Setup parameters in
             `pyproject.toml`, especially setup `line-length`. Defaults to True.
         test (bool, optional): Whether run pytest tests. Defaults to True.
@@ -315,6 +360,8 @@ def project_utils_pipeline(
         config.update(
             {
                 "do_only": do_only,
+                "prepare_venvs": prepare_venvs,
+                "prepare_venvs_path": prepare_venvs_path,
                 "reformat": reformat,
                 "test": test,
                 "test_options": test_options,
@@ -335,8 +382,10 @@ def project_utils_pipeline(
         config.with_argparse()
 
     if config.do_only:
+        do_only_value = config[config.do_only]
         config.update(
             {
+                "prepare_venvs": None,
                 "reformat": False,
                 "test": False,
                 "docs": False,
@@ -346,10 +395,16 @@ def project_utils_pipeline(
                 "version": None,
             }
         )
-        config.update({config.do_only: True})
+        config.update({config.do_only: do_only_value})
 
         if config.verbosity == 1:
             config.verbosity = 0
+
+    if config.prepare_venvs:
+        venvs.prepare_venvs(
+            path=config.prepare_venvs_path,
+            versions=config.prepare_venvs,
+        )
 
     verbose = True if config.verbosity == 2 else False
     progress_is_printed = config.verbosity > 0
@@ -435,7 +490,7 @@ def project_utils_pipeline(
     try:
         if config.deploy:
             print_progress("Deploying to PyPi", progress_is_printed)
-            deploy_to_pypi()
+            deploy_to_pypi(verbose=verbose)
 
     except Exception as err:  # pylint: disable=broad-except
         raise RuntimeError(

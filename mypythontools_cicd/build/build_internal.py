@@ -10,6 +10,7 @@ from mypythontools.paths import PathLike, find_path, validate_path
 from mypythontools.misc import delete_files
 from mypythontools.system import (
     check_script_is_available,
+    check_library_is_available,
     get_console_str_with_quotes,
     terminal_do_command,
 )
@@ -232,6 +233,7 @@ def build_app(
 
     if preset == "eel":
 
+        check_library_is_available("EelForkExcludeFiles")
         import EelForkExcludeFiles
 
         hidden_imports = [

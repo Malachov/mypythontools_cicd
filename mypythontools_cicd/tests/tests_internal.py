@@ -12,7 +12,7 @@ import numpy as np
 import mylogging
 
 from mypythontools.paths import validate_path, PathLike
-from mypythontools.system import get_console_str_with_quotes, terminal_do_command
+from mypythontools.system import get_console_str_with_quotes, terminal_do_command, check_library_is_available
 from mypythontools.misc import delete_files, GLOBAL_VARS
 import mypythontools.system.system_internal
 
@@ -54,6 +54,7 @@ def setup_tests(
         sys.path.insert(0, test_dir_path.as_posix())
 
     if matplotlib_test_backend:
+        check_library_is_available("matplotlib")
         import matplotlib
 
         with warnings.catch_warnings():
@@ -176,7 +177,11 @@ def run_tests(
         virtualenvs = [virtualenvs] if isinstance(virtualenvs, (str, Path)) else virtualenvs
         for i in virtualenvs:
             my_venv = venvs.Venv(i)
-            my_venv.create()
+            if not my_venv.installed:
+                raise RuntimeError(
+                    "Defined virtualenv not found. Use 'venvs.prepare_venvs' or install venvs manually."
+                )
+
             if sync_requirements:
                 if verbosity:
                     print(f"\tSyncing requirements in venv '{my_venv.venv_path.name}' for tests")
@@ -203,15 +208,18 @@ def run_tests(
         wsl_virtualenvs = [wsl_virtualenvs] if isinstance(wsl_virtualenvs, (str, Path)) else wsl_virtualenvs
 
         for i in wsl_virtualenvs:
+            if verbosity:
+                print(f"\tPreparing wsl environment {i}.")
+
             settings["virtualenvs"] = [i]
 
+            if not Path(i).exists():
+                raise RuntimeError("Venv doesn't exists. Create it first with 'venvs.prepare_venvs()'")
             terminal_do_command(
                 f"wsl {i}/bin/python -m pip install mypythontools_cicd",
                 verbose=verbose,
                 error_header=f"Installing pytest to wsl venv {i} failed.",
             )
-            if verbosity:
-                print(f"\tPreparing wsl environment.")
 
             terminal_do_command(
                 f'wsl {i}/bin/python -m mypythontools_cicd --do_only test --test_options "{settings}"',

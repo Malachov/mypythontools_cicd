@@ -6,16 +6,17 @@
 from __future__ import annotations
 from pathlib import Path
 import sys
-import os
 
 from mypythontools.misc import delete_files
 
-root_path = Path(__file__).parents[1].as_posix()  # pylint: disable=no-member
-sys.path.insert(0, root_path)
-
+root_path = sys.path.insert(0, Path(__file__).parents[1].as_posix())  # pylint: disable=no-member
 
 import mypythontools_cicd as cicd
 from mypythontools_cicd.project_paths import PROJECT_PATHS
+
+cicd.tests.setup_tests()
+
+from conftest import prepare_test
 
 test_project_path = Path("tests").resolve() / "tested project"
 
@@ -104,10 +105,7 @@ def test_project_utils_pipeline():
 
 if __name__ == "__main__":
     # Find paths and add to sys.path to be able to import local modules
-    cicd.tests.setup_tests()
-
-    test_project_path = Path("tests").resolve() / "tested project"
-    os.chdir(test_project_path)
+    prepare_test()
 
     # test_cicd()
     # test_build()

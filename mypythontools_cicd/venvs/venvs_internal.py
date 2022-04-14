@@ -6,13 +6,13 @@ import platform
 import subprocess
 import shutil
 from pathlib import Path
-from ast import literal_eval
 import sys
 
 from typing_extensions import Literal
 
-from mypythontools.paths import PathLike
+from mypythontools.paths import PathLike, is_path_free
 from mypythontools.system import (
+    check_script_is_available,
     get_console_str_with_quotes,
     terminal_do_command,
     SHELL_AND,
@@ -29,7 +29,7 @@ class Venv:
     Example:
         >>> from pathlib import Path
         ...
-        >>> path = "venv/310" if platform.system() == "Windows" else "venv/ubuntu"
+        >>> path = "venv/3.10" if platform.system() == "Windows" else "venv/wsl-3.10"
         >>> venv = Venv(path)
         >>> venv.create()  # If already exists, it's skipped
         >>> venv.install_library("colorama==0.3.9")
@@ -55,13 +55,7 @@ class Venv:
         self.venv_path = Path(venv_path).resolve()
         """Path to venv prefix, e.g. .../venv"""
 
-        if not self.venv_path.exists():
-            self.venv_path.mkdir()
-
         self.venv_path_console_str = get_console_str_with_quotes(self.venv_path)
-
-        if not self.venv_path.exists():
-            self.venv_path.mkdir(parents=True, exist_ok=True)
 
         if platform.system() == "Windows":
             activate_path = self.venv_path / "Scripts" / "activate.bat"
@@ -69,13 +63,13 @@ class Venv:
             self.executable_str = get_console_str_with_quotes(
                 (self.venv_path / "Scripts" / "python.exe").as_posix()
             )
-            self.create_command = f"python -m virtualenv {self.venv_path_console_str}"
+            self.create_command = f"python -m venv {self.venv_path_console_str}"
             self.activate_command = get_console_str_with_quotes(activate_path.as_posix())
             scripts_path = self.venv_path / "Scripts"
         else:
             self.executable = self.venv_path / "bin" / "python"
             self.executable_str = get_console_str_with_quotes((self.venv_path / "bin" / "python").as_posix())
-            self.create_command = f"python3 -m virtualenv {self.venv_path_console_str}"
+            self.create_command = f"python3 -m venv {self.venv_path_console_str}"
             self.activate_command = f". {get_console_str_with_quotes(self.venv_path / 'bin' / 'activate')}"
             scripts_path = self.venv_path / "bin"
 
@@ -99,6 +93,9 @@ class Venv:
             verbose (bool, optional): If True, result of terminal command will be printed to console.
                 Defaults to False.
         """
+        if not self.venv_path.exists():
+            self.venv_path.mkdir(parents=True, exist_ok=True)
+
         if not self.installed:
             terminal_do_command(
                 self.create_command,
@@ -203,3 +200,75 @@ class Venv:
 def is_venv() -> bool:
     """True if run in venv, False if run in main interpreter directly."""
     return sys.base_prefix.startswith(sys.prefix)
+
+
+def prepare_venvs(
+    path: None | PathLike = "venv",
+    versions: Sequence[str] = ["3.7", "3.10", "wsl-3.7", "wsl-3.10"],
+    verbose: bool = False,
+):
+    """This will install virtual environments with defined versions.
+
+    Installation will be skipped if there is already venv. It is possible tu use wsl on windows. You have to
+    install python launcher when using wsl https://github.com/brettcannon/python-launcher
+
+    Args:
+        path (None | PathLike): Where venvs will be stored. If None, cwd() will be used. Defaults to "venv".
+        versions (Sequence[str], optional): List of used versions. If you want to use wsl, use `wsl-3.x`.
+            Defaults to ["3.7", "3.10", "wsl-3.7", "wsl-3.10"].
+    """
+    if path is None:
+        path = Path.cwd()
+
+    wsl_venvs = [version for version in versions if version.startswith("wsl-")]
+    venvs = [version for version in versions if not version.startswith("wsl-")]
+
+    for version in venvs:
+
+        venv_path = Path(f"{path}/{version}")
+
+        if not is_path_free(venv_path):
+            if Venv(venv_path).installed:
+                continue
+            else:
+                raise RuntimeError(
+                    "There is not empty folder on defined path and existing virtualenv for current OS not "
+                    "detected there. Clean it first or check the settings whether it should be an wsl venv."
+                )
+
+        create_command = f"py -{version} -m venv {venv_path.as_posix()}"
+
+        terminal_do_command(
+            create_command,
+            verbose=verbose,
+            error_header=f"Creating virtual environment for version {version} failed.",
+        )
+
+    if wsl_venvs:
+        check_script_is_available(
+            "wsl py",
+            message=(
+                "Verify whether python launcher is installed. If not, install it from "
+                "https://github.com/brettcannon/python-launcher . \n If it's installed in "
+                "'/home/linuxbrew/.linuxbrew/bin/py' it will be not visible from wsl. "
+                "You can use /usr/local/..."
+            ),
+        )
+
+    for version in wsl_venvs:
+        venv_path = Path(f"{path}/{version}")
+        version_number = version.strip("wsl-")
+
+        if (Path(venv_path) / "bin").exists():
+            continue
+
+        create_command = f"wsl py -{version_number} -m venv {venv_path.as_posix()}"
+
+        terminal_do_command(
+            create_command,
+            verbose=verbose,
+            error_header=(
+                "Creating wsl virtual environment for version {version} failed. After installing 'python3.x' "
+                "from 'ppa:deadsnakes/ppa' repository it may not work. Try 'python3.x-venv' version."
+            ),
+        )

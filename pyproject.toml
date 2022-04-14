@@ -1,6 +1,6 @@
 [tool.pytest.ini_options]
 addopts = "--doctest-modules -x --nbmake"
-usefixtures = "before_test"
+usefixtures = "prepare_test_fixture"
 norecursedirs = [
     "tested project",
     "dist",

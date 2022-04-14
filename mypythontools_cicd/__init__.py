@@ -28,8 +28,6 @@
     :target: https://codecov.io/gh/Malachov/mypythontools_cicd
     :alt: Codecov
 
-`CNN <http://cnn.com>`_
-
 Why to use this and not Travis or Circle CI? It's local and it's fast. You can setup it as a task in IDE and
 if some phase fails, you know it soon and before pushing to repo.
 
@@ -60,28 +58,28 @@ Subpackages
 Package is divided into several subpackages
 
 :py:mod:`mypythontools_cicd.build`
-----------------------------
+----------------------------------
 Build your application to .exe with pyinstaller. It also builds javascript frontend with npm build if configured,
 which is used mostly in PyVueEel applications.
 
 :py:mod:`mypythontools_cicd.deploy`
-----------------------------
+-----------------------------------
 Build package and push it to PyPi,
 
 :py:mod:`mypythontools_cicd.misc`
-----------------------------
+---------------------------------
 Miscellaneous functions that are too small to have own subpackage.
 
 :py:mod:`mypythontools_cicd.project_utils`
-----------------------------
+------------------------------------------
 Run cicd functions like formatting, testing or deploying.
 
 :py:mod:`mypythontools_cicd.project_paths`
-----------------------------
+------------------------------------------
 Subpackage where you can get paths used in your project (path to README,  __init__.py etc.).
 
 :py:mod:`mypythontools_cicd.tests`
-----------------------------
+----------------------------------
 Runs tests in more venvs with different python versions, also with wsl linux if configured and create coverage.
 
 Mypythontools
@@ -113,7 +111,7 @@ from mypythontools_cicd import venvs
 
 __all__ = ["build", "deploy", "project_paths", "project_utils", "tests", "venvs"]
 
-__version__ = "0.0.17"
+__version__ = "0.0.18"
 
 __author__ = "Daniel Malachov"
 __license__ = "MIT"

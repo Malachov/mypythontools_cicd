@@ -70,9 +70,10 @@ Examples:
     Then just import any function from here and call with desired params. E.g.
 """
 from mypythontools_cicd.project_utils.project_utils_pipeline_internal import (
+    DEFAULT_PIPELINE_CONFIG,
     PipelineConfig,
     project_utils_pipeline,
 )
 from mypythontools_cicd.project_utils import project_utils_functions
 
-__all__ = ["PipelineConfig", "project_utils_pipeline", "project_utils_functions"]
+__all__ = ["DEFAULT_PIPELINE_CONFIG", "PipelineConfig", "project_utils_pipeline", "project_utils_functions"]

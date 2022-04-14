@@ -12,25 +12,12 @@ root_path_str = Path(__file__).parents[1].as_posix()
 if root_path_str not in sys.path:
     sys.path.insert(0, root_path_str)
 
-from mypythontools_cicd.project_utils import project_utils_pipeline
+from mypythontools_cicd.project_utils import project_utils_pipeline, DEFAULT_PIPELINE_CONFIG
+
+DEFAULT_PIPELINE_CONFIG.deploy = True
+# DEFAULT_PIPELINE_CONFIG.do_only = ""
+
 
 if __name__ == "__main__":
     # All the parameters can be overwritten via CLI args
-    project_utils_pipeline(
-        reformat=True,
-        test=True,
-        test_options={
-            "virtualenvs": ["venv/37", "venv/310"],
-            "sync_requirements": "infer",
-            "wsl_virtualenvs": "venv/linux",
-        },
-        version="increment",
-        docs=True,
-        sync_requirements=None,
-        commit_and_push_git=True,
-        commit_message="New commit",
-        tag="__version__",
-        tag_message="New version",
-        deploy=True,
-        allowed_branches=("master", "main"),
-    )
+    project_utils_pipeline(config=DEFAULT_PIPELINE_CONFIG)

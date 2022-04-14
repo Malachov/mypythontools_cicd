@@ -23,13 +23,18 @@ test_project_path = (
 )
 
 
+def prepare_test():
+    """This can also been called from tests when running without pytest."""
+    os.chdir(test_project_path.as_posix())
+    PROJECT_PATHS.reset_paths()
+
+
 @pytest.fixture(autouse=True)
-def before_test():
+def prepare_test_fixture():
     """Configure tests. Runs automatically from pytest and is called if running from file."""
     cwd_backup = Path.cwd()
 
-    os.chdir(test_project_path.as_posix())
-    PROJECT_PATHS.reset_paths()
+    prepare_test()
 
     yield
 
