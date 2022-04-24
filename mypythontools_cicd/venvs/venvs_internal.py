@@ -168,20 +168,22 @@ class Venv:
         """Install package to venv with pip install.
 
         Args:
+            name (str): Name of installed library.
             verbose (bool, optional): If True, result of terminal command will be printed to console.
                 Defaults to False.
         """
-        command = f"{self.activate_command} {SHELL_AND} pip install {name}"
+        command = f"{self.activate_command} {SHELL_AND} {self.executable_str} -m pip install {name}"
         terminal_do_command(command, shell=True, verbose=verbose, error_header="Library installation failed.")
 
     def uninstall_library(self, name: str, verbose: bool = False) -> None:
         """Uninstall package to venv with pip install.
 
         Args:
+            name (str): Name of library to uninstall.
             verbose (bool, optional): If True, result of terminal command will be printed to console.
                 Defaults to False.
         """
-        command = f"{self.activate_command} {SHELL_AND} pip uninstall {name}"
+        command = f"{self.executable_str} -m pip uninstall {name}"
 
         terminal_do_command(command, shell=True, verbose=verbose, error_header="Library removal failed")
 
@@ -268,7 +270,7 @@ def prepare_venvs(
             create_command,
             verbose=verbose,
             error_header=(
-                "Creating wsl virtual environment for version {version} failed. After installing 'python3.x' "
+                f"Creating wsl virtual environment for version {version} failed. After installing 'python3.x' "
                 "from 'ppa:deadsnakes/ppa' repository it may not work. Try 'python3.x-venv' version."
             ),
         )

@@ -7,6 +7,7 @@ You can use functions separately of course.
 """
 
 from mypythontools_cicd.project_utils.project_utils_functions.project_utils_functions_internal import (
+    git_commit_all,
     generate_readme_from_init,
     get_version,
     git_push,
@@ -16,6 +17,7 @@ from mypythontools_cicd.project_utils.project_utils_functions.project_utils_func
 )
 
 __all__ = [
+    "git_commit_all",
     "generate_readme_from_init",
     "get_version",
     "git_push",

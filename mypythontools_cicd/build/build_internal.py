@@ -44,7 +44,7 @@ def build_app(
     clean: bool = True,
     verbosity: Literal[0, 1, 2] = 1,
 ) -> None:
-    """One script to build .exe app from source code.
+    """One script to build .exe app from source code on windows.
 
     This script automatically generate .spec file, build node web files and add environment variables during
     build.
@@ -339,7 +339,7 @@ coll = COLLECT(exe,
         cwd=PROJECT_PATHS.root.as_posix(),
         shell=True,
         verbose=verbose,
-        error_header="Build with pyinstaller failed. Troubleshooting: Try to install newset pyinstaller locally with "
+        error_header="Build with pyinstaller failed. Troubleshooting: Try to install newest pyinstaller locally with "
         "'python setup.py install', update setuptools, delete 'build' and 'dist' folder and try again.",
     )
 

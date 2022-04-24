@@ -7,14 +7,16 @@ import sys
 
 from typing_extensions import Literal
 
-from .. import tests
-from .. import venvs
-from mypythontools.config import ConfigBase, MyProperty
+from mypythontools.config import Config, MyProperty
 from mypythontools.misc import GLOBAL_VARS, EMOJIS, print_progress
 from mypythontools.paths import PathLike
 from mypythontools.types import validate_sequence
+
+from .. import tests
+from .. import venvs
 from ..deploy import deploy_to_pypi
 from .project_utils_functions import (
+    git_commit_all,
     get_version,
     git_push,
     reformat_with_black,
@@ -28,7 +30,7 @@ from .project_utils_functions import (
 from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 
-class PipelineConfig(ConfigBase):
+class PipelineConfig(Config):
     """Allow to setup CICD pipeline."""
 
     @MyProperty
@@ -39,14 +41,16 @@ class PipelineConfig(ConfigBase):
         "test",
         "docs",
         "sync_requirements",
-        "commit_and_push_git",
+        "git_commit_all",
+        "git_push",
         "deploy",
     ]:
         """Run just single function from pipeline, ignore the others.
 
         Type:
             Literal[
-                None, "prepare_venvs", "reformat", "test", "docs", "sync_requirements", "commit_and_push_git", "deploy"
+                None, "prepare_venvs", "reformat", "test", "docs", "sync_requirements", "git_commit_all",
+                "git_push", "deploy"
             ]
 
         Default:
@@ -94,7 +98,7 @@ class PipelineConfig(ConfigBase):
         return True
 
     @MyProperty
-    def test() -> bool:
+    def test() -> None | tests.TestConfig:
         """Run pytest tests.
 
         Type:
@@ -103,24 +107,7 @@ class PipelineConfig(ConfigBase):
         Default:
             True
         """
-        return True
-
-    @MyProperty
-    def test_options() -> None | dict:
-        """Check tests module and function run_tests for what parameters you can use.
-
-        None here means default settings.
-
-        Type:
-            None | dict
-
-        Default:
-            None
-
-        For example:
-            >>> {"virtualenvs": ["venv/3.7", "venv/3.10], "test_coverage": True, "verbose": False}
-        """
-        return None
+        return tests.default_test_config
 
     @MyProperty
     def version() -> None | str:
@@ -165,8 +152,23 @@ class PipelineConfig(ConfigBase):
         return None
 
     @MyProperty
-    def commit_and_push_git() -> bool:
-        """Whether push to github or not.
+    def git_commit_all() -> None | str:
+        """Whether take all the changes in repository and create a commit with these changes.
+
+        Note:
+            !!! Be cautious here !!!
+
+        Type:
+            None | str
+
+        Default:
+            'New commit'
+        """
+        return "New commit"
+
+    @MyProperty
+    def git_push() -> bool:
+        """Whether push to repository.
 
         Type:
             bool
@@ -175,18 +177,6 @@ class PipelineConfig(ConfigBase):
             True
         """
         return True
-
-    @MyProperty
-    def commit_message() -> str:
-        """Commit message.
-
-        Type:
-            str
-
-        Default:
-            'New commit'
-        """
-        return "New commit"
 
     @MyProperty
     def tag() -> str:
@@ -251,51 +241,26 @@ class PipelineConfig(ConfigBase):
         return 1
 
 
-DEFAULT_PIPELINE_CONFIG = PipelineConfig()
+default_pipeline_config = PipelineConfig()
 """Default values for pipeline. If something changes here, it will change in all the repos. You can edit any
 values in pipeline. Intellisense and help tooltip should help."""
 
 
 def project_utils_pipeline(
-    config: None | PipelineConfig = None,
-    do_only: Literal[
-        None,
-        "prepare_venvs",
-        "reformat",
-        "test",
-        "docs",
-        "sync_requirements",
-        "commit_and_push_git",
-        "deploy",
-    ] = None,
-    prepare_venvs: None | list[str] = None,
-    prepare_venvs_path: PathLike = "venv",
-    reformat: bool = True,
-    test: bool = True,
-    test_options: None | dict[str, Sequence[PathLike]] | dict[str, Any] = None,
-    version: None | str = "increment",
-    docs: bool = True,
-    sync_requirements: None | Literal["infer"] | PathLike | Sequence[PathLike] = None,
-    commit_and_push_git: bool = True,
-    commit_message: str = "New commit",
-    tag: str = "__version__",
-    tag_message: str = "New version",
-    deploy: bool = False,
-    allowed_branches: None | Sequence[str] = ("master", "main"),
-    verbosity: Literal[0, 1, 2] = 1,
+    config: PipelineConfig = default_pipeline_config,
 ) -> None:
-    """Run pipeline for pushing and deploying app.
+    """Run pipeline for pushing and deploying an app or a package.
 
     Can run tests, generate rst files for sphinx docs, push to github and deploy to pypi. All params can be
     configured not only with function params, but also from command line with params and therefore callable
     from terminal and optimal to run from IDE (for example with creating simple VS Code task).
 
-    Some function suppose some project structure (where are the docs, where is __init__.py etc.).
+    Some function suppose some project structure (where are the docs, where is `__init__.py` etc.).
     If you are issuing some error, try functions directly, find necessary paths in parameters
     and set paths that are necessary in paths module.
 
     Note:
-        Beware that pushing to git create a commit and add all the changes, not only the staged ones.
+        Beware, that by default, it creates a commit and add all the changes, not only the staged ones.
 
     When using sys args for boolean values, always define True or False.
 
@@ -305,78 +270,32 @@ def project_utils_pipeline(
         mypythontools_cicd --do_only reformat
 
     Args:
-        config (None | PipelineConfig, optional): It is possible to configure all the params with CLI args
-            from terminal. Just create script, where create config, use 'config.with_argparse()' and call
-            project_utils_pipeline(config=config). Example usage 'python your_script.py --deploy True'
-        do_only (Literal[None, "prepare_venvs", "reformat", "test", "docs", "sync_requirements",
-            "commit_and_push_git", "deploy"], optional): Run just single function from pipeline, ignore the
-            others. Reason for why to call it form here and not directly is to be able to use sys args or
-            single command line entrypoint. Defaults to None.
-        prepare_venvs (list[str]): List of used versions. If you want to use wsl, use `wsl-3.x`.
-            Defaults to None.
-        prepare_venvs_path (str): Where venvs will be stored. Defaults to "venv".
-        reformat (bool, optional): Reformat all python files with black. Setup parameters in
-            `pyproject.toml`, especially setup `line-length`. Defaults to True.
-        test (bool, optional): Whether run pytest tests. Defaults to True.
-        test_options (None | dict, optional): Parameters of tests function e.g.
-            ``{"virtualenvs": ["venv/37", "venv/310], "test_coverage": True, "verbose": False}``.
-            Defaults to None.
-        version (None | str, optional): New version. E.g. '1.2.5'. If 'increment', than it's auto
-            incremented. E.g from '1.0.2' to 'v1.0.3'. If empty string "" or not value arg in CLI,
-            then version is not changed. 'Defaults to "increment".
-        docs(bool, optional): Whether generate sphinx apidoc and generate rst files for documentation.
-            Some files in docs source can be deleted - check `docs` docstrings for details.
-            Defaults to True.
-        sync_requirements(None | Literal["infer"] | PathLike | Sequence[PathLike], optional): Check
-            requirements.txt and update all the libraries. Defaults to False.
-        commit_and_push_git (bool, optional): Whether push repository on git with commit_message, tag and tag
-            message. Defaults to True.
-        commit_message (str, optional): Git message. Defaults to 'New commit'.
-        tag (str, optional): Used tag. If tag is '__version__', than updated version from __init__
-            is used.  If empty string "" or not value arg in CLI, then tag is not created.
-            Defaults to __version__.
-        tag_message (str, optional): Tag message. Defaults to New version.
-        deploy (bool, optional): Whether deploy to PYPI. `TWINE_USERNAME` and `TWINE_PASSWORD`
-            are used for authorization. Defaults to False.
-        allowed_branches (None | Sequence[str], optional): As there are stages like pushing to git or to PyPi,
-            it's better to secure it to not to be triggered on some feature branch. If not one of
-            defined branches, error is raised. Defaults to ("master", "main").
-        verbosity (Literal[0, 1, 2], optional): How much information print to console. 0 prints just errors,
-            1 prints when starting new step, 2 prints every stdout to console. Defaults to 1.
+        config (PipelineConfig, optional): PipelineConfig object with CICD pipeline configuration. Just import
+            default_pipeline_config and use intellisense and help tooltip with description. It is also
+            possible to configure all the params with CLI args from terminal.
+            Defaults to `default_pipeline_config`.
 
     Example:
         Recommended use is from IDE (for example with Tasks in VS Code). Check utils docs for how to use it.
         You can also use it from python... ::
 
+            from mypythontools_cicd.project_utils import project_utils_pipeline, default_pipeline_config
+
+            default_pipeline_config.deploy = True
+            # default_pipeline_config.do_only = ""
+
+
             if __name__ == "__main__":
-                project_utils_pipeline(commit_and_push_git=False, deploy=False, allowed_branches=None)
+                # All the parameters can be overwritten via CLI args
+                project_utils_pipeline(config=default_pipeline_config)
 
         It's also possible to use CLI and configure it via args. This example just push repo to PyPi. ::
 
             python path-to-project/utils/push_script.py --do_only deploy
+
+    Another way how to run it is to use IDE. For example in VS Code you can use Tasks. Check `project_utils`
+    docs for examples.
     """
-    if not config:
-        config = PipelineConfig()
-        config.update(
-            {
-                "do_only": do_only,
-                "prepare_venvs": prepare_venvs,
-                "prepare_venvs_path": prepare_venvs_path,
-                "reformat": reformat,
-                "test": test,
-                "test_options": test_options,
-                "version": version,
-                "sync_requirements": sync_requirements,
-                "docs": docs,
-                "commit_and_push_git": commit_and_push_git,
-                "commit_message": commit_message,
-                "tag": tag,
-                "tag_message": tag_message,
-                "deploy": deploy,
-                "allowed_branches": allowed_branches,
-                "verbosity": verbosity,
-            }
-        )
 
     if not GLOBAL_VARS.is_tested:
         config.with_argparse()
@@ -387,10 +306,11 @@ def project_utils_pipeline(
             {
                 "prepare_venvs": None,
                 "reformat": False,
-                "test": False,
+                "test": None,
                 "docs": False,
                 "sync_requirements": None,
-                "commit_and_push_git": False,
+                "git_commit_all": None,
+                "git_push": False,
                 "deploy": False,
                 "version": None,
             }
@@ -413,7 +333,7 @@ def project_utils_pipeline(
         import git.repo
         from git.exc import InvalidGitRepositoryError
 
-        validate_sequence(allowed_branches, "allowed_branches")
+        validate_sequence(config.allowed_branches, "allowed_branches")
 
         try:
             branch = git.repo.Repo(PROJECT_PATHS.root.as_posix()).active_branch.name
@@ -449,11 +369,7 @@ def project_utils_pipeline(
 
     if config.test:
         print_progress("Testing", progress_is_printed)
-
-        if not config.test_options:
-            config.test_options = {}
-
-        tests.run_tests(**config.test_options, verbosity=verbosity)
+        tests.run_tests(config.test)
 
     if config.reformat:
         print_progress("Reformatting", progress_is_printed)
@@ -469,10 +385,13 @@ def project_utils_pipeline(
             print_progress("Sphinx docs generation", progress_is_printed)
             docs_regenerate(verbose=verbose)
 
-        if config.commit_and_push_git:
+        if config.git_commit_all:
+            print_progress("Creating commit of all changes", progress_is_printed)
+            git_commit_all(config.git_commit_all, verbose=verbose)
+
+        if config.git_push:
             print_progress("Pushing to github", progress_is_printed)
             git_push(
-                commit_message=config.commit_message,
                 tag=config.tag,
                 tag_message=config.tag_message,
                 verbose=verbose,

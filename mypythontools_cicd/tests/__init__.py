@@ -4,8 +4,17 @@ you can generate tests from readme or you can configure tests in conftest with s
 from mypythontools_cicd.tests.tests_internal import (
     add_readme_tests,
     deactivate_test_settings,
+    default_test_config,
     run_tests,
     setup_tests,
+    TestConfig,
 )
 
-__all__ = ["add_readme_tests", "deactivate_test_settings", "run_tests", "setup_tests"]
+__all__ = [
+    "add_readme_tests",
+    "deactivate_test_settings",
+    "default_test_config",
+    "run_tests",
+    "setup_tests",
+    "TestConfig",
+]

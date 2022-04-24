@@ -11,7 +11,7 @@ from conftest import prepare_test
 
 
 def test_prepare_venvs():
-    delete_files(["3.7", "3.10", "wsl-3.7", "wsl-3.10"])
+    delete_files(["3.7", "wsl-3.7"])
     venvs.prepare_venvs(path="venv", versions=["3.7", "3.10", "wsl-3.7", "wsl-3.10"])
     for i in ["3.7", "3.10"]:
         assert venvs.Venv(f"venv/{i}").installed
@@ -21,6 +21,7 @@ def test_prepare_venvs():
 
 if __name__ == "__main__":
     # Find paths and add to sys.path to be able to import local modules
-    prepare_test()
-
+    # prepare_test()
     # test_prepare_venvs()
+
+    pass

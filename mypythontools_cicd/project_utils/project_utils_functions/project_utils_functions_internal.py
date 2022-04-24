@@ -47,15 +47,24 @@ def reformat_with_black(
     )
 
 
-def git_push(
-    commit_message: str, tag: str = "__version__", tag_message: str = "New version", verbose: bool = False
-) -> None:
-    """Stage all changes, commit, add tag and push.
+def git_commit_all(commit_message: str, verbose: bool = False):
+    """Stage all changes and create a commit.
+
+    Args:
+        commit_message (str): Commit message.
+        verbose (bool, optional): If True, result of terminal command will be printed to console.
+            Defaults to False.
+    """
+    git_command = f"git add . {SHELL_AND} git commit -m {get_console_str_with_quotes(commit_message)}"
+    terminal_do_command(git_command, cwd=PROJECT_PATHS.root.as_posix(), verbose=verbose)
+
+
+def git_push(tag: str = "__version__", tag_message: str = "New version", verbose: bool = False) -> None:
+    """Add tag and push.
 
     If tag is `__version__`, then tag is inferred from `__init__.py`.
 
     Args:
-        commit_message (str): Commit message.
         tag (str, optional): Define tag used in push. If tag is '__version__', than is automatically generated
             from __init__ version. E.g from '1.0.2' to 'v1.0.2'.  Defaults to '__version__'.
         tag_message (str, optional): Message in annotated tag. Defaults to 'New version'.
@@ -65,7 +74,7 @@ def git_push(
     import git.repo
     import git.exc
 
-    git_command = f"git add . {SHELL_AND} git commit -m {get_console_str_with_quotes(commit_message)} {SHELL_AND} git push"
+    git_command = "git push"
 
     if tag == "__version__":
         tag = f"v{get_version()}"

@@ -6,18 +6,18 @@ from pathlib import Path
 import sys
 
 # Find paths and add to sys.path to be able to use local version and not installed mypythontools version
-root_path_str = Path(__file__).parents[1].as_posix()
 # root = Path(os.path.abspath(inspect.getframeinfo(inspect.currentframe()).filename)).parents[1]
+root_path_str = Path(__file__).parents[1].as_posix()
 
 if root_path_str not in sys.path:
     sys.path.insert(0, root_path_str)
 
-from mypythontools_cicd.project_utils import project_utils_pipeline, DEFAULT_PIPELINE_CONFIG
+from mypythontools_cicd.project_utils import project_utils_pipeline, default_pipeline_config
 
-DEFAULT_PIPELINE_CONFIG.deploy = True
-# DEFAULT_PIPELINE_CONFIG.do_only = ""
+default_pipeline_config.deploy = True
+# default_pipeline_config.do_only = ""
 
 
 if __name__ == "__main__":
     # All the parameters can be overwritten via CLI args
-    project_utils_pipeline(config=DEFAULT_PIPELINE_CONFIG)
+    project_utils_pipeline(config=default_pipeline_config)

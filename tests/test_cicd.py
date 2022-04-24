@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 from pathlib import Path
+import platform
 import sys
 
 from mypythontools.misc import delete_files
@@ -39,12 +40,12 @@ def test_docs_regenerate():
     not_deleted = test_project_path / "docs" / "source" / "not_deleted.rst"
 
     if rst_path.exists():
-        rst_path.unlink()  # missing_ok=True from python 3.8 on...
+        rst_path.unlink()  # missing_ok=True from python 3.7 on...
 
     if not not_deleted.exists():
         with open(not_deleted, "w") as not_deleted_file:
             not_deleted_file.write("I will not be deleted.")
-            # missing_ok=True from python 3.8 on...
+            # missing_ok=True from python 3.7 on...
 
     cicd.project_utils.project_utils_functions.docs_regenerate(keep=("not_deleted.rst",))
 
@@ -65,22 +66,24 @@ def test_set_version():
 
 def test_build():
 
-    # Build app with pyinstaller example
-    cicd.build.build_app(
-        main_file="app.py",
-        console=True,
-        debug=True,
-        clean=False,
-        build_web=False,
-        ignored_packages=["matplotlib"],
-        virtualenv=sys.prefix,
-        sync_requirements=None,
-    )
+    if platform.system() == "Windows":
 
-    assert (test_project_path / "dist").exists()
+        # Build app with pyinstaller example
+        cicd.build.build_app(
+            main_file="app.py",
+            console=True,
+            debug=True,
+            clean=False,
+            build_web=False,
+            ignored_packages=["matplotlib"],
+            virtualenv=sys.prefix,
+            sync_requirements=None,
+        )
 
-    delete_files(test_project_path / "build")
-    delete_files(test_project_path / "dist")
+        assert (test_project_path / "dist").exists()
+
+        delete_files(test_project_path / "build")
+        delete_files(test_project_path / "dist")
 
 
 def test_add_readme_tests():
@@ -95,12 +98,15 @@ def test_add_readme_tests():
 
 
 def test_project_utils_pipeline():
-    cicd.project_utils.project_utils_pipeline(
-        commit_and_push_git=False,
-        deploy=False,
-        allowed_branches=None,
-        test_options={"virtualenvs": [sys.prefix], "sync_requirements": None},
-    )
+    config = cicd.project_utils.default_pipeline_config
+
+    config.git_push = False
+    config.deploy = False
+    config.allowed_branches = None
+    config.test = cicd.tests.TestConfig()
+    config.test.update({"virtualenvs": [sys.prefix], "sync_requirements": None})
+
+    cicd.project_utils.project_utils_pipeline(config)
 
 
 if __name__ == "__main__":
