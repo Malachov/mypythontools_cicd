@@ -24,6 +24,7 @@ class TestConfig(Config):
     """Allow to setup tests."""
 
     @MyProperty
+    @staticmethod
     def tested_path() -> None | PathLike:
         """If None, root is used. Root is necessary if using doctest, 'tests' folder not works for doctests
         in modules.
@@ -37,6 +38,7 @@ class TestConfig(Config):
         return None
 
     @MyProperty
+    @staticmethod
     def tests_path() -> None | PathLike:
         """If None, tests is used. It means where venv will be stored etc.
 
@@ -49,6 +51,7 @@ class TestConfig(Config):
         return None
 
     @MyProperty
+    @staticmethod
     def test_coverage() -> bool:
         """Whether run test coverage plugin. If True, pytest-cov must be installed.
 
@@ -61,6 +64,7 @@ class TestConfig(Config):
         return True
 
     @MyProperty
+    @staticmethod
     def stop_on_first_error() -> bool:
         """Whether stop on first error.
 
@@ -73,6 +77,7 @@ class TestConfig(Config):
         return True
 
     @MyProperty
+    @staticmethod
     def virtualenvs() -> None | Sequence[PathLike]:
         """Virtualenvs used to testing. It's used to be able to test more python versions at once.
 
@@ -89,6 +94,7 @@ class TestConfig(Config):
         return sys.prefix
 
     @MyProperty
+    @staticmethod
     def wsl_virtualenvs() -> None | Sequence[PathLike]:
         """If want to test Linux python from windows, it's possible with wsl. Just define path to venvs.
         It has to be relative paths.
@@ -100,10 +106,11 @@ class TestConfig(Config):
         return None
 
     @MyProperty
+    @staticmethod
     def sync_requirements() -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
         """If using `virtualenvs` define what libraries will be installed by path to requirements.txt. Can
         also be a list of more files e.g ``["requirements.txt", "requirements_dev.txt"]``. If "infer",
-        autodetected (all requirements).
+        auto detected (all requirements).
 
         Type:
             None | Literal["infer"] | PathLike | Sequence[PathLike]
@@ -114,6 +121,7 @@ class TestConfig(Config):
         return "infer"
 
     @MyProperty
+    @staticmethod
     def verbosity() -> Literal[0, 1, 2]:
         """Whether print details on errors or keep silent. If 0, no details, parameters `-q and `--tb=line`
         are added. if 1, some details are added --tb=short. If 2, more details are printed (default
@@ -128,6 +136,7 @@ class TestConfig(Config):
         return 1
 
     @MyProperty
+    @staticmethod
     def extra_args() -> None | list:
         """List of args passed to pytest.
 

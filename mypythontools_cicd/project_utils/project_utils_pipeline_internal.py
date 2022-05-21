@@ -34,6 +34,7 @@ class PipelineConfig(Config):
     """Allow to setup CICD pipeline."""
 
     @MyProperty
+    @staticmethod
     def do_only() -> Literal[
         None,
         "prepare_venvs",
@@ -62,6 +63,7 @@ class PipelineConfig(Config):
         return None
 
     @MyProperty
+    @staticmethod
     def prepare_venvs() -> None | list[str]:
         """Create venvs with defined versions.
 
@@ -74,6 +76,7 @@ class PipelineConfig(Config):
         return ["3.7", "3.10", "wsl-3.7", "wsl-3.10"]
 
     @MyProperty
+    @staticmethod
     def prepare_venvs_path() -> PathLike:
         """Prepare venvs in defined path.
 
@@ -86,6 +89,7 @@ class PipelineConfig(Config):
         return "venv"
 
     @MyProperty
+    @staticmethod
     def reformat() -> bool:
         """Reformat all python files with black. Setup parameters in pyproject.toml.
 
@@ -98,6 +102,7 @@ class PipelineConfig(Config):
         return True
 
     @MyProperty
+    @staticmethod
     def test() -> None | tests.TestConfig:
         """Run pytest tests.
 
@@ -110,6 +115,7 @@ class PipelineConfig(Config):
         return tests.default_test_config
 
     @MyProperty
+    @staticmethod
     def version() -> None | str:
         """Overwrite __version__ in __init__.py.
 
@@ -125,6 +131,7 @@ class PipelineConfig(Config):
         return "increment"
 
     @MyProperty
+    @staticmethod
     def docs() -> bool:
         """Whether generate sphinx apidoc and generate rst files for documentation. Some files in docs source
         can be deleted - check `docs` docstrings for details.
@@ -138,6 +145,7 @@ class PipelineConfig(Config):
         return True
 
     @MyProperty
+    @staticmethod
     def sync_requirements() -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
         """Check requirements.txt and update all the libraries.
 
@@ -152,6 +160,7 @@ class PipelineConfig(Config):
         return None
 
     @MyProperty
+    @staticmethod
     def git_commit_all() -> None | str:
         """Whether take all the changes in repository and create a commit with these changes.
 
@@ -167,6 +176,7 @@ class PipelineConfig(Config):
         return "New commit"
 
     @MyProperty
+    @staticmethod
     def git_push() -> bool:
         """Whether push to repository.
 
@@ -179,6 +189,7 @@ class PipelineConfig(Config):
         return True
 
     @MyProperty
+    @staticmethod
     def tag() -> str:
         """Tag. E.g 'v1.1.2'. If '__version__', get the version.
 
@@ -191,6 +202,7 @@ class PipelineConfig(Config):
         return "__version__"
 
     @MyProperty
+    @staticmethod
     def tag_message() -> str:
         """Tag message.
 
@@ -203,6 +215,7 @@ class PipelineConfig(Config):
         return "New version"
 
     @MyProperty
+    @staticmethod
     def deploy() -> bool:
         """Deploy to PYPI.
 
@@ -217,6 +230,7 @@ class PipelineConfig(Config):
         return False
 
     @MyProperty
+    @staticmethod
     def allowed_branches() -> None | Sequence[str]:
         """Pipeline runs only on defined branches.
 
@@ -229,6 +243,7 @@ class PipelineConfig(Config):
         return ["master", "main"]
 
     @MyProperty
+    @staticmethod
     def verbosity() -> Literal[0, 1, 2]:
         """Pipeline runs only on defined branches.
 

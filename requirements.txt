@@ -1,4 +1,4 @@
-mypythontools>=2.0.1
+mypythontools>=2.0.2
 mylogging>=4.0.3
 bandit
 black
