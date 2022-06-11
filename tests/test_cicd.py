@@ -9,6 +9,7 @@ import platform
 import sys
 
 from mypythontools.misc import delete_files
+from mypythontools.system import is_wsl
 
 root_path = sys.path.insert(0, Path(__file__).parents[1].as_posix())  # pylint: disable=no-member
 
@@ -66,7 +67,7 @@ def test_set_version():
 
 def test_build():
 
-    if platform.system() == "Windows":
+    if platform.system() == "Windows" and not is_wsl():
 
         # Build app with pyinstaller example
         cicd.build.build_app(
@@ -101,10 +102,11 @@ def test_project_utils_pipeline():
     config = cicd.project_utils.default_pipeline_config
 
     config.git_push = False
+    config.git_commit_all = None
     config.deploy = False
     config.allowed_branches = None
     config.test = cicd.tests.TestConfig()
-    config.test.update({"virtualenvs": [sys.prefix], "sync_requirements": None})
+    config.test.update({"virtualenvs": [sys.prefix], "wsl_virtualenvs": None, "sync_requirements": None})
 
     cicd.project_utils.project_utils_pipeline(config)
 
@@ -115,3 +117,5 @@ if __name__ == "__main__":
 
     # test_cicd()
     # test_build()
+
+    # test_project_utils_pipeline()

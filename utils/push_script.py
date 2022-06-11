@@ -14,9 +14,10 @@ if root_path_str not in sys.path:
 
 from mypythontools_cicd.project_utils import project_utils_pipeline, default_pipeline_config
 
+default_pipeline_config.test.wsl_virtualenvs = None
+
 default_pipeline_config.deploy = True
 # default_pipeline_config.do_only = ""
-
 
 if __name__ == "__main__":
     # All the parameters can be overwritten via CLI args

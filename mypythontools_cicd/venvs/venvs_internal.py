@@ -222,6 +222,9 @@ def prepare_venvs(
     if path is None:
         path = Path.cwd()
 
+    if not isinstance(versions, list):
+        raise TypeError("'versions' param has to be list.")
+
     wsl_venvs = [version for version in versions if version.startswith("wsl-")]
     venvs = [version for version in versions if not version.startswith("wsl-")]
 

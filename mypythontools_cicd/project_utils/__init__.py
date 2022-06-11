@@ -7,6 +7,10 @@ edit library version, generate rst files for docs, push to git or deploy app to 
 All of that can be done with one function call - with `project_utils_pipeline` function that
 run other functions, or you can use functions separately. 
 
+Attributes:
+    default_pipeline_config (PipelineConfig): Default values for pipeline. If something changes here, it will
+        change in all the repos. You can edit any values in pipeline. Intellisense and help tooltip should
+        help.
 
 Examples:
 =========

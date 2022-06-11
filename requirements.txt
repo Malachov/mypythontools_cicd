@@ -1,4 +1,4 @@
-mypythontools>=2.0.2
+mypythontools>=2.0.4
 mylogging>=4.0.3
 bandit
 black
@@ -8,6 +8,7 @@ line_profiler
 memory_profiler
 numpy
 nbmake
+perflint
 phmdoctest
 pip-tools
 pydocstyle

@@ -1,7 +1,7 @@
 """Module with functions for 'project_utils' subpackage."""
 
 from __future__ import annotations
-from typing import Sequence, Any
+from typing import Sequence
 import os
 import sys
 
@@ -15,6 +15,7 @@ from mypythontools.types import validate_sequence
 from .. import tests
 from .. import venvs
 from ..deploy import deploy_to_pypi
+from ..project_paths import PROJECT_PATHS
 from .project_utils_functions import (
     git_commit_all,
     get_version,
@@ -27,11 +28,13 @@ from .project_utils_functions import (
 # Lazy loaded
 # from git import Repo
 
-from mypythontools_cicd.project_paths import PROJECT_PATHS
-
 
 class PipelineConfig(Config):
     """Allow to setup CICD pipeline."""
+
+    def __init__(self) -> None:
+        """Create subconfigs."""
+        self.test: tests.TestConfig = tests.default_test_config
 
     @MyProperty
     @staticmethod
@@ -68,7 +71,7 @@ class PipelineConfig(Config):
         """Create venvs with defined versions.
 
         Type:
-            list[str]
+            None | list[str]
 
         Default:
             ["3.7", "3.10", "wsl-3.7", "wsl-3.10"]
@@ -97,22 +100,9 @@ class PipelineConfig(Config):
             bool
 
         Default:
-            True.
-        """
-        return True
-
-    @MyProperty
-    @staticmethod
-    def test() -> None | tests.TestConfig:
-        """Run pytest tests.
-
-        Type:
-            bool
-
-        Default:
             True
         """
-        return tests.default_test_config
+        return True
 
     @MyProperty
     @staticmethod
@@ -133,14 +123,15 @@ class PipelineConfig(Config):
     @MyProperty
     @staticmethod
     def docs() -> bool:
-        """Whether generate sphinx apidoc and generate rst files for documentation. Some files in docs source
-        can be deleted - check `docs` docstrings for details.
+        """Define whether generate sphinx apidoc and generate rst files for documentation.
 
         Type:
             bool
 
         Default:
             True
+
+        Some files in docs source can be deleted - check `docs` docstrings for details.
         """
         return True
 
@@ -165,7 +156,7 @@ class PipelineConfig(Config):
         """Whether take all the changes in repository and create a commit with these changes.
 
         Note:
-            !!! Be cautious here !!!
+            !!! Be cautious here if using with `git_push` !!!
 
         Type:
             None | str
@@ -207,7 +198,7 @@ class PipelineConfig(Config):
         """Tag message.
 
         Type:
-            bool
+            str
 
         Default:
             'New version'
@@ -257,8 +248,6 @@ class PipelineConfig(Config):
 
 
 default_pipeline_config = PipelineConfig()
-"""Default values for pipeline. If something changes here, it will change in all the repos. You can edit any
-values in pipeline. Intellisense and help tooltip should help."""
 
 
 def project_utils_pipeline(
@@ -311,17 +300,22 @@ def project_utils_pipeline(
     Another way how to run it is to use IDE. For example in VS Code you can use Tasks. Check `project_utils`
     docs for examples.
     """
-
     if not GLOBAL_VARS.is_tested:
         config.with_argparse()
 
-    if config.do_only:
-        do_only_value = config[config.do_only]
+    do_only = config.do_only
+
+    # If do_only change subconfig value and not config, change it
+    if do_only == "test":
+        do_only = "run_tests"
+
+    if do_only:
+        do_only_value = config[do_only]
         config.update(
             {
                 "prepare_venvs": None,
                 "reformat": False,
-                "test": None,
+                "run_tests": False,
                 "docs": False,
                 "sync_requirements": None,
                 "git_commit_all": None,
@@ -330,7 +324,7 @@ def project_utils_pipeline(
                 "version": None,
             }
         )
-        config.update({config.do_only: do_only_value})
+        config.update({do_only: do_only_value})
 
         if config.verbosity == 1:
             config.verbosity = 0

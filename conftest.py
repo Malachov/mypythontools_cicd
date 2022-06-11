@@ -7,7 +7,7 @@ import pytest
 
 
 # Find paths and add to sys.path to be able to use local version and not installed mypythontools version
-root = Path(__file__).parent
+root = Path(__file__).parent.resolve()
 
 if root not in sys.path:
     sys.path.insert(0, root.as_posix())

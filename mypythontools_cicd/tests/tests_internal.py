@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 import warnings
 import os
+import platform
 
 from typing_extensions import Literal
 import numpy as np
@@ -13,10 +14,10 @@ import mylogging
 
 from mypythontools.paths import validate_path, PathLike
 from mypythontools.system import get_console_str_with_quotes, terminal_do_command, check_library_is_available
-from mypythontools.misc import delete_files, GLOBAL_VARS
+from mypythontools.misc import delete_files
 from mypythontools.config import Config, MyProperty
 
-from .. import venvs
+from ..venvs import Venv
 from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 
@@ -26,16 +27,30 @@ class TestConfig(Config):
     @MyProperty
     @staticmethod
     def tested_path() -> None | PathLike:
-        """If None, root is used. Root is necessary if using doctest, 'tests' folder not works for doctests
-        in modules.
+        """Define path of tested folder.
 
         Type:
             None | PathLike
 
         Default:
             None
+
+        If None, root is used. Root is necessary if using doctest, 'tests' folder not works for doctest.
         """
         return None
+
+    @MyProperty
+    @staticmethod
+    def run_tests() -> bool:
+        """Define whether run tests or not.
+
+        Type:
+            bool
+
+        Default:
+            True
+        """
+        return True
 
     @MyProperty
     @staticmethod
@@ -82,56 +97,60 @@ class TestConfig(Config):
         """Virtualenvs used to testing. It's used to be able to test more python versions at once.
 
         Example:
-            ``["venv/37", "venv/310"]``. If you want to use current venv, use `sys.prefix`. If there is no
+            ``["venv/3.7", "venv/3.10"]``. If you want to use current venv, use `sys.prefix`. If there is no
             venv, it's created with default virtualenv version.
 
         Type:
             None | Sequence[PathLike]
 
         Default:
-            sys.prefix
+            ["venv/3.7", "venv/3.10"]
         """
-        return sys.prefix
+        return ["venv/3.7", "venv/3.10"]
 
     @MyProperty
     @staticmethod
     def wsl_virtualenvs() -> None | Sequence[PathLike]:
-        """If want to test Linux python from windows, it's possible with wsl. Just define path to venvs.
-        It has to be relative paths.
+        """Define which wsl virtual environments will be tested.
 
         Type:
+            None | Sequence[PathLike]
 
         Default:
+            ["venv/wsl-3.7", "venv/wsl-3.7"]
         """
-        return None
+        return ["venv/wsl-3.7", "venv/wsl-3.7"]
 
     @MyProperty
     @staticmethod
     def sync_requirements() -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
-        """If using `virtualenvs` define what libraries will be installed by path to requirements.txt. Can
-        also be a list of more files e.g ``["requirements.txt", "requirements_dev.txt"]``. If "infer",
-        auto detected (all requirements).
+        """Define whether update libraries versions.
 
         Type:
             None | Literal["infer"] | PathLike | Sequence[PathLike]
 
         Default:
             "infer"
+
+        If using `virtualenvs` define what libraries will be installed by path to requirements.txt. Can
+        also be a list of more files e.g ``["requirements.txt", "requirements_dev.txt"]``. If "infer",
+        auto detected (all requirements).
         """
         return "infer"
 
     @MyProperty
     @staticmethod
     def verbosity() -> Literal[0, 1, 2]:
-        """Whether print details on errors or keep silent. If 0, no details, parameters `-q and `--tb=line`
-        are added. if 1, some details are added --tb=short. If 2, more details are printed (default
-        --tb=auto).
+        """Define whether print details on errors or keep silent.
 
         Type:
             Literal[0, 1, 2]
 
         Default:
             1
+
+        If 0, no details, parameters `-q and `--tb=line` are added. if 1, some details are added --tb=short.
+        If 2, more details are printed (default --tb=auto).
         """
         return 1
 
@@ -150,9 +169,6 @@ class TestConfig(Config):
 
 
 default_test_config = TestConfig()
-"""Default values for tests config. If something changes here, it will change in all the repos. You can edit
-any values in pipeline. Intellisense and help tooltip should help.
-"""
 
 
 def run_tests(
@@ -178,6 +194,8 @@ def run_tests(
     Example:
         ``run_tests(verbosity=2)``
     """
+    if not config.run_tests:
+        return
 
     tested_path = validate_path(config.tested_path) if config.tested_path else PROJECT_PATHS.root
     tests_path = validate_path(config.tests_path) if config.tests_path else PROJECT_PATHS.tests
@@ -188,17 +206,6 @@ def run_tests(
 
     extra_args = config.extra_args if config.extra_args else []
 
-    if not config.test_coverage:
-        pytest_args = [tested_path_str]
-    else:
-        pytest_args = [
-            tested_path_str,
-            "--cov",
-            get_console_str_with_quotes(PROJECT_PATHS.app),
-            "--cov-report",
-            get_console_str_with_quotes(f"xml:{tests_path / 'coverage.xml'}"),
-        ]
-
     if config.stop_on_first_error:
         extra_args.append("-x")
 
@@ -208,11 +215,11 @@ def run_tests(
     elif verbosity == 1:
         extra_args.append("--tb=short")
 
-    complete_args = [
+    complete_args = (
         "pytest",
-        *pytest_args,
+        tested_path_str,
         *extra_args,
-    ]
+    )
 
     test_command = " ".join(complete_args)
 
@@ -228,10 +235,10 @@ def run_tests(
     virtualenvs = config.virtualenvs
 
     if virtualenvs:
-        test_commands = []
+        test_commands: list[str] = []
         virtualenvs = [virtualenvs] if isinstance(virtualenvs, (str, Path)) else virtualenvs
         for i in virtualenvs:
-            my_venv = venvs.Venv(i)
+            my_venv = Venv(i)
             if not my_venv.installed:
                 raise RuntimeError(
                     "Defined virtualenv not found. Use 'venvs.prepare_venvs' or install venvs manually."
@@ -246,8 +253,17 @@ def run_tests(
             my_venv.install_library("pytest")
             test_commands.append(f"{my_venv.activate_command} && {test_command}")
     else:
-        test_commands = [test_command]
+        test_commands: list[str] = [test_command]
 
+    if config.test_coverage:
+        # Add coverage only to first virtualenv
+        xml_path = f"xml:{tests_path / 'coverage.xml'}"
+        cov_str = (
+            f" --cov {get_console_str_with_quotes(PROJECT_PATHS.app)} --cov-report "
+            f"{get_console_str_with_quotes(xml_path)}"
+        )
+
+        test_commands[0] = test_commands[0] + cov_str
     for i, command in enumerate(test_commands):
         if verbosity and virtualenvs:
             print(f"\tStarting tests with venv `{virtualenvs[i]}`")
@@ -259,33 +275,42 @@ def run_tests(
     if config.test_coverage:
         delete_files(".coverage")
 
-    wsl_virtualenvs = config.wsl_virtualenvs
-
-    if wsl_virtualenvs:
-        wsl_virtualenvs = [wsl_virtualenvs] if isinstance(wsl_virtualenvs, (str, Path)) else wsl_virtualenvs
-
-        for i in wsl_virtualenvs:
-            if verbosity:
-                print(f"\tPreparing wsl environment {i}.")
-
-            wsl_config = config.copy()
-
-            wsl_config.virtualenvs = [i]
-
-            if not Path(i).exists():
-                raise RuntimeError("Venv doesn't exists. Create it first with 'venvs.prepare_venvs()'")
-            terminal_do_command(
-                f"wsl {i}/bin/python -m pip install mypythontools_cicd",
-                verbose=verbose,
-                error_header=f"Installing pytest to wsl venv {i} failed.",
+    if config.wsl_virtualenvs:
+        if platform.system() == "Windows":
+            wsl_virtualenvs = (
+                [config.wsl_virtualenvs]
+                if isinstance(config.wsl_virtualenvs, (str, Path))
+                else config.wsl_virtualenvs
             )
 
-            terminal_do_command(
-                f'wsl {i}/bin/python -m mypythontools_cicd --do_only test --test "{wsl_config.get_dict()}"',
-                cwd=tested_path.as_posix(),
-                verbose=verbose,
-                error_header="Tests failed.",
-            )
+            for i in wsl_virtualenvs:
+                if verbosity:
+                    print(f"\tPreparing wsl environment {i}.")
+
+                wsl_config = config.copy()
+
+                wsl_config.virtualenvs = [i]
+
+                if not Path(i).exists():
+                    raise RuntimeError("Venv doesn't exists. Create it first with 'venvs.prepare_venvs()'")
+                terminal_do_command(
+                    f"wsl {i}/bin/python -m pip install mypythontools_cicd",
+                    verbose=verbose,
+                    error_header=f"Installing pytest to wsl venv {i} failed.",
+                )
+
+                test_config = " ".join(
+                    f"--{i} {j}"
+                    for i, j in wsl_config.get_dict().items()
+                    if i not in ["virtualenvs", "wsl_virtualenvs"]
+                )
+
+                terminal_do_command(
+                    f'wsl {i}/bin/python -m mypythontools_cicd --do_only test {test_config}"',
+                    cwd=tested_path.as_posix(),
+                    verbose=verbose,
+                    error_header="Tests failed.",
+                )
 
 
 def setup_tests(
@@ -302,7 +327,7 @@ def setup_tests(
         imports from tests will not work.
 
     Args:
-        generate_readme_tests (bool, optional): If True, generete new tests from readme if there are
+        generate_readme_tests (bool, optional): If True, generate new tests from readme if there are
             new changes. Defaults to True.
         matplotlib_test_backend (bool, optional): If using matlplotlib, it need to be
             closed to continue tests. Change backend to agg. Defaults to False.
@@ -393,7 +418,7 @@ def add_readme_tests(readme_path: None | PathLike = None, test_folder_path: None
 def deactivate_test_settings() -> None:
     """Deactivate functionality from setup_tests.
 
-    Sometimess you want to run test just in normal mode (enable plots etc.). Usually at the end of
+    Sometimes you want to run test just in normal mode (enable plots etc.). Usually at the end of
     test file in ``if __name__ = "__main__":`` block.
     """
     mylogging.config.colorize = True
