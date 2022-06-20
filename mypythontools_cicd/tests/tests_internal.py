@@ -13,7 +13,12 @@ import numpy as np
 import mylogging
 
 from mypythontools.paths import validate_path, PathLike
-from mypythontools.system import get_console_str_with_quotes, terminal_do_command, check_library_is_available
+from mypythontools.system import (
+    get_console_str_with_quotes,
+    terminal_do_command,
+    check_library_is_available,
+    is_wsl,
+)
 from mypythontools.misc import delete_files
 from mypythontools.config import Config, MyProperty
 
@@ -105,6 +110,8 @@ class TestConfig(Config):
 
         Default:
             ["venv/3.7", "venv/3.10"]
+
+        If no `virtualenvs` nor `wsl_virtualenvs` is configured, then default python will be used.
         """
         return ["venv/3.7", "venv/3.10"]
 
@@ -204,6 +211,49 @@ def run_tests(
     verbosity = config.verbosity
     verbose = True if verbosity == 2 else False
 
+    # If using wsl, use recursion, call function itself with prepended wsl and
+    # changing corresponding `virtualenvs` config
+    # This will be skipped when running on wsl as `wsl_virtualenvs` is emptied
+    if config.wsl_virtualenvs:
+        if platform.system() == "Windows" and not is_wsl():
+            wsl_virtualenvs = (
+                [config.wsl_virtualenvs]
+                if isinstance(config.wsl_virtualenvs, (str, Path))
+                else config.wsl_virtualenvs
+            )
+
+            for i in wsl_virtualenvs:
+                if verbosity:
+                    print(f"\tPreparing wsl environment {i}.")
+
+                wsl_config = config.copy()
+
+                wsl_config.virtualenvs = [i]
+
+                if not Path(i).exists():
+                    raise RuntimeError("Venv doesn't exists. Create it first with 'venvs.prepare_venvs()'")
+                terminal_do_command(
+                    f"wsl {i}/bin/python -m pip install mypythontools_cicd",
+                    verbose=verbose,
+                    error_header=f"Installing pytest to wsl venv {i} failed.",
+                )
+
+                test_config = " ".join(
+                    f"--{i} {j}"
+                    for i, j in wsl_config.get_dict().items()
+                    if i not in ["virtualenvs", "wsl_virtualenvs"]
+                )
+
+                terminal_do_command(
+                    f'wsl {i}/bin/python -m mypythontools_cicd --do_only test {test_config}"',
+                    cwd=tested_path.as_posix(),
+                    verbose=verbose,
+                    error_header="Tests failed.",
+                )
+
+    if not config.virtualenvs:
+        return
+
     extra_args = config.extra_args if config.extra_args else []
 
     if config.stop_on_first_error:
@@ -274,43 +324,6 @@ def run_tests(
 
     if config.test_coverage:
         delete_files(".coverage")
-
-    if config.wsl_virtualenvs:
-        if platform.system() == "Windows":
-            wsl_virtualenvs = (
-                [config.wsl_virtualenvs]
-                if isinstance(config.wsl_virtualenvs, (str, Path))
-                else config.wsl_virtualenvs
-            )
-
-            for i in wsl_virtualenvs:
-                if verbosity:
-                    print(f"\tPreparing wsl environment {i}.")
-
-                wsl_config = config.copy()
-
-                wsl_config.virtualenvs = [i]
-
-                if not Path(i).exists():
-                    raise RuntimeError("Venv doesn't exists. Create it first with 'venvs.prepare_venvs()'")
-                terminal_do_command(
-                    f"wsl {i}/bin/python -m pip install mypythontools_cicd",
-                    verbose=verbose,
-                    error_header=f"Installing pytest to wsl venv {i} failed.",
-                )
-
-                test_config = " ".join(
-                    f"--{i} {j}"
-                    for i, j in wsl_config.get_dict().items()
-                    if i not in ["virtualenvs", "wsl_virtualenvs"]
-                )
-
-                terminal_do_command(
-                    f'wsl {i}/bin/python -m mypythontools_cicd --do_only test {test_config}"',
-                    cwd=tested_path.as_posix(),
-                    verbose=verbose,
-                    error_header="Tests failed.",
-                )
 
 
 def setup_tests(
