@@ -124,9 +124,9 @@ class TestConfig(Config):
             None | Sequence[PathLike]
 
         Default:
-            ["venv/wsl-3.7", "venv/wsl-3.7"]
+            ["venv/wsl-3.7", "venv/wsl-3.10"]
         """
-        return ["venv/wsl-3.7", "venv/wsl-3.7"]
+        return ["venv/wsl-3.7", "venv/wsl-3.10"]
 
     @MyProperty
     @staticmethod
