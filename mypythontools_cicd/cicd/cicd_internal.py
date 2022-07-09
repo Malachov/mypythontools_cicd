@@ -1,4 +1,4 @@
-"""Module with functions for 'project_utils' subpackage."""
+"""Module with functions for 'cicd' subpackage."""
 
 from __future__ import annotations
 from typing import Sequence
@@ -10,23 +10,18 @@ from typing_extensions import Literal
 from mypythontools.config import Config, MyProperty
 from mypythontools.misc import GLOBAL_VARS, EMOJIS, print_progress
 from mypythontools.paths import PathLike
-from mypythontools.types import validate_sequence
 
-from .. import tests
+from .. import git
 from .. import venvs
+from .. import tests
 from ..deploy import deploy_to_pypi
-from ..project_paths import PROJECT_PATHS
-from .project_utils_functions import (
-    git_commit_all,
-    get_version,
-    git_push,
-    reformat_with_black,
-    set_version,
-    docs_regenerate,
-)
+from ..docs import docs_regenerate
+from ..misc import reformat_with_black
 
-# Lazy loaded
-# from git import Repo
+from ..packages import (
+    get_version,
+    set_version,
+)
 
 
 class PipelineConfig(Config):
@@ -44,7 +39,7 @@ class PipelineConfig(Config):
         "reformat",
         "test",
         "docs",
-        "sync_requirements",
+        "sync_test_requirements",
         "git_commit_all",
         "git_push",
         "deploy",
@@ -53,7 +48,7 @@ class PipelineConfig(Config):
 
         Type:
             Literal[
-                None, "prepare_venvs", "reformat", "test", "docs", "sync_requirements", "git_commit_all",
+                None, "prepare_venvs", "reformat", "test", "docs", "sync_test_requirements", "git_commit_all",
                 "git_push", "deploy"
             ]
 
@@ -74,9 +69,9 @@ class PipelineConfig(Config):
             None | list[str]
 
         Default:
-            ["3.7", "3.10", "wsl-3.7", "wsl-3.10"]
+            None
         """
-        return ["3.7", "3.10", "wsl-3.7", "wsl-3.10"]
+        return None
 
     @MyProperty
     @staticmethod
@@ -250,7 +245,7 @@ class PipelineConfig(Config):
 default_pipeline_config = PipelineConfig()
 
 
-def project_utils_pipeline(
+def cicd_pipeline(
     config: PipelineConfig = default_pipeline_config,
 ) -> None:
     """Run pipeline for pushing and deploying an app or a package.
@@ -283,7 +278,7 @@ def project_utils_pipeline(
         Recommended use is from IDE (for example with Tasks in VS Code). Check utils docs for how to use it.
         You can also use it from python... ::
 
-            from mypythontools_cicd.project_utils import project_utils_pipeline, default_pipeline_config
+            from mypythontools_cicd.cicd import cicd_pipeline, default_pipeline_config
 
             default_pipeline_config.deploy = True
             # default_pipeline_config.do_only = ""
@@ -291,13 +286,13 @@ def project_utils_pipeline(
 
             if __name__ == "__main__":
                 # All the parameters can be overwritten via CLI args
-                project_utils_pipeline(config=default_pipeline_config)
+                cicd_pipeline(config=default_pipeline_config)
 
         It's also possible to use CLI and configure it via args. This example just push repo to PyPi. ::
 
             python path-to-project/utils/push_script.py --do_only deploy
 
-    Another way how to run it is to use IDE. For example in VS Code you can use Tasks. Check `project_utils`
+    Another way how to run it is to use IDE. For example in VS Code you can use Tasks. Check `cicd`
     docs for examples.
     """
     if not GLOBAL_VARS.is_tested:
@@ -329,35 +324,17 @@ def project_utils_pipeline(
         if config.verbosity == 1:
             config.verbosity = 0
 
+    verbosity = config.verbosity
+    verbose = verbosity == 2
+    progress_is_printed = verbosity > 0
+
     if config.prepare_venvs:
         venvs.prepare_venvs(
-            path=config.prepare_venvs_path,
-            versions=config.prepare_venvs,
+            path=config.prepare_venvs_path, versions=config.prepare_venvs, verbosity=verbosity
         )
 
-    verbose = True if config.verbosity == 2 else False
-    progress_is_printed = config.verbosity > 0
-
     if config.allowed_branches:
-        import git.repo
-        from git.exc import InvalidGitRepositoryError
-
-        validate_sequence(config.allowed_branches, "allowed_branches")
-
-        try:
-            branch = git.repo.Repo(PROJECT_PATHS.root.as_posix()).active_branch.name
-        except InvalidGitRepositoryError:
-            raise RuntimeError(
-                "Loading of git project failed. Verify whether running pipeline from correct path. If "
-                "checks branch with `allowed_branches', there has to be `.git` folder available."
-            ) from None
-
-        if branch not in config.allowed_branches:
-            raise RuntimeError(
-                "Pipeline started on branch that is not allowed."
-                "If you want to use it anyway, add it to allowed_branches parameter and "
-                "turn off changing version and creating tag."
-            )
+        git.check_branch(config.allowed_branches)
 
     # Do some checks before run pipeline so not need to rollback eventually
     if config.deploy:
@@ -368,20 +345,15 @@ def project_utils_pipeline(
             raise KeyError("Setup env vars TWINE_USERNAME and TWINE_PASSWORD to use deploy.")
 
     if config.sync_requirements:
-        print_progress("Syncing requirements", progress_is_printed)
-
         if not venvs.is_venv:
             raise RuntimeError("'sync_requirements' available only if using virtualenv.")
         my_venv = venvs.Venv(sys.prefix)
-        my_venv.create()
-        my_venv.sync_requirements(config.sync_requirements, verbose=verbose)
+        my_venv.sync_requirements(config.sync_requirements, verbosity=verbosity)
 
     if config.test:
-        print_progress("Testing", progress_is_printed)
         tests.run_tests(config.test)
 
     if config.reformat:
-        print_progress("Reformatting", progress_is_printed)
         reformat_with_black()
 
     if config.version and config.version != "None":
@@ -391,19 +363,16 @@ def project_utils_pipeline(
 
     try:
         if config.docs:
-            print_progress("Sphinx docs generation", progress_is_printed)
-            docs_regenerate(verbose=verbose)
+            docs_regenerate(verbosity=verbosity)
 
         if config.git_commit_all:
-            print_progress("Creating commit of all changes", progress_is_printed)
-            git_commit_all(config.git_commit_all, verbose=verbose)
+            git.commit_all(config.git_commit_all, verbosity=verbosity)
 
         if config.git_push:
-            print_progress("Pushing to github", progress_is_printed)
-            git_push(
+            git.push(
                 tag=config.tag,
                 tag_message=config.tag_message,
-                verbose=verbose,
+                verbosity=verbosity,
             )
 
     except Exception as err:  # pylint: disable=broad-except
@@ -417,8 +386,7 @@ def project_utils_pipeline(
 
     try:
         if config.deploy:
-            print_progress("Deploying to PyPi", progress_is_printed)
-            deploy_to_pypi(verbose=verbose)
+            deploy_to_pypi(verbosity=verbosity)
 
     except Exception as err:  # pylint: disable=broad-except
         raise RuntimeError(

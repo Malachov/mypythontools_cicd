@@ -1,5 +1,6 @@
-"""Miscellaneous functions that are too small to have own subpackage."""
+"""Miscellaneous functions that are too small to have own subpackage like for example formatting with black.
+"""
 
-from mypythontools_cicd.misc.misc_internal import get_requirements_files
+from mypythontools_cicd.misc.misc_internal import reformat_with_black
 
-__all__ = ["get_requirements_files"]
+__all__ = ["reformat_with_black"]

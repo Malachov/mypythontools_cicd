@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import sys
-import pytest
 
+import pytest
 
 # Find paths and add to sys.path to be able to use local version and not installed mypythontools version
 root = Path(__file__).parent.resolve()
@@ -15,7 +15,7 @@ if root not in sys.path:
 from mypythontools_cicd.tests import setup_tests
 from mypythontools_cicd.project_paths import PROJECT_PATHS
 
-setup_tests(matplotlib_test_backend=True)
+setup_tests()
 
 # Can be loaded from tests here or tests in test project
 test_project_path = (

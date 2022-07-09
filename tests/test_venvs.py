@@ -22,9 +22,25 @@ def test_prepare_venvs():
         for i in ["venv/wsl-3.7", "venv/wsl-3.10"]:
             assert (Path(i) / "bin").exists()
 
+    # TODO test with_wsl
+
 
 if __name__ == "__main__":
     # Find paths and add to sys.path to be able to import local modules
     prepare_test()
 
     # test_prepare_venvs()
+
+    from pathlib import Path
+
+    path = "venv/3.10" if platform.system() == "Windows" else "venv/wsl-3.10"
+    venv = venvs.Venv(path)
+    venv.create()  # If already exists, it's skipped
+    venv.install_library("colorama==0.3.9")
+    a = "colorama==0.3.9" in venv.list_packages()
+
+    venv.sync_requirements()  # There ia a 0.4.4 in requirements.txt
+    "colorama==0.4.4" in venv.list_packages()
+
+    venv.remove()
+    Path(path).exists()

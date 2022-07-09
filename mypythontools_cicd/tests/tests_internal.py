@@ -6,24 +6,22 @@ from pathlib import Path
 import sys
 import warnings
 import os
-import platform
 
 from typing_extensions import Literal
 import numpy as np
-import mylogging
 
-from mypythontools.paths import validate_path, PathLike
+import mylogging
+from mypythontools.paths import validate_path, PathLike, WslPath
+from mypythontools.misc import delete_files, print_progress
+from mypythontools.config import Config, MyProperty
 from mypythontools.system import (
     get_console_str_with_quotes,
     terminal_do_command,
     check_library_is_available,
-    is_wsl,
 )
-from mypythontools.misc import delete_files
-from mypythontools.config import Config, MyProperty
 
-from ..venvs import Venv
-from mypythontools_cicd.project_paths import PROJECT_PATHS
+from ..venvs import Venv, prepare_venvs
+from ..project_paths import PROJECT_PATHS
 
 
 class TestConfig(Config):
@@ -72,6 +70,32 @@ class TestConfig(Config):
 
     @MyProperty
     @staticmethod
+    def prepare_test_venvs() -> None | list[str]:
+        """Create venvs with defined versions.
+
+        Type:
+            None | list[str]
+
+        Default:
+            ["3.7", "3.10", "wsl-3.7", "wsl-3.10"]
+        """
+        return ["3.7", "3.10", "wsl-3.7", "wsl-3.10"]
+
+    @MyProperty
+    @staticmethod
+    def prepare_test_venvs_path() -> PathLike:
+        """Prepare venvs in defined path.
+
+        Type:
+            str
+
+        Default:
+            "tests/venv"
+        """
+        return "tests/venv"
+
+    @MyProperty
+    @staticmethod
     def test_coverage() -> bool:
         """Whether run test coverage plugin. If True, pytest-cov must be installed.
 
@@ -98,52 +122,52 @@ class TestConfig(Config):
 
     @MyProperty
     @staticmethod
-    def virtualenvs() -> None | Sequence[PathLike]:
+    def virtualenvs() -> Sequence[PathLike]:
         """Virtualenvs used to testing. It's used to be able to test more python versions at once.
 
         Example:
-            ``["venv/3.7", "venv/3.10"]``. If you want to use current venv, use `sys.prefix`. If there is no
-            venv, it's created with default virtualenv version.
+            ``["tests/venvs/3.7", "tests/venvs/3.10"]``. If you want to use current venv, use `[sys.prefix]`.
 
         Type:
             None | Sequence[PathLike]
 
         Default:
-            ["venv/3.7", "venv/3.10"]
+            ["tests/venv/3.7", "tests/venv/3.10"]
 
-        If no `virtualenvs` nor `wsl_virtualenvs` is configured, then default python will be used.
+        If no `virtualenvs` nor `wsl_virtualenvs` is configured, then python that called the function
+        will be used.
         """
-        return ["venv/3.7", "venv/3.10"]
+        return ["tests/venv/3.7", "tests/venv/3.10"]
 
     @MyProperty
     @staticmethod
-    def wsl_virtualenvs() -> None | Sequence[PathLike]:
-        """Define which wsl virtual environments will be tested.
+    def wsl_virtualenvs() -> Sequence[PathLike]:
+        """Define which wsl virtual environments will be tested via wsl.
 
         Type:
             None | Sequence[PathLike]
 
         Default:
-            ["venv/wsl-3.7", "venv/wsl-3.10"]
+            ["tests/venv/wsl-3.7", "tests/venv/wsl-3.10"]
         """
-        return ["venv/wsl-3.7", "venv/wsl-3.10"]
+        return ["tests/venv/wsl-3.7", "tests/venv/wsl-3.10"]
 
     @MyProperty
     @staticmethod
-    def sync_requirements() -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
+    def sync_test_requirements() -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
         """Define whether update libraries versions.
 
         Type:
             None | Literal["infer"] | PathLike | Sequence[PathLike]
 
         Default:
-            "infer"
+            ["requirements.txt"]
 
         If using `virtualenvs` define what libraries will be installed by path to requirements.txt. Can
         also be a list of more files e.g ``["requirements.txt", "requirements_dev.txt"]``. If "infer",
         auto detected (all requirements).
         """
-        return "infer"
+        return ["requirements.txt"]
 
     @MyProperty
     @staticmethod
@@ -201,58 +225,25 @@ def run_tests(
     Example:
         ``run_tests(verbosity=2)``
     """
+    print_progress("Testing", config.verbosity > 0)
+
     if not config.run_tests:
         return
 
-    tested_path = validate_path(config.tested_path) if config.tested_path else PROJECT_PATHS.root
-    tests_path = validate_path(config.tests_path) if config.tests_path else PROJECT_PATHS.tests
-    tested_path_str = get_console_str_with_quotes(tested_path)
+    tested_path = (
+        validate_path(config.tested_path, "Running tests failed", "tested_path")
+        if config.tested_path
+        else PROJECT_PATHS.root
+    )
+    tests_path = (
+        validate_path(config.tests_path, "Running tests failed", "tests_path")
+        if config.tests_path
+        else PROJECT_PATHS.tests
+    )
 
     verbosity = config.verbosity
     verbose = True if verbosity == 2 else False
-
-    # If using wsl, use recursion, call function itself with prepended wsl and
-    # changing corresponding `virtualenvs` config
-    # This will be skipped when running on wsl as `wsl_virtualenvs` is emptied
-    if config.wsl_virtualenvs:
-        if platform.system() == "Windows" and not is_wsl():
-            wsl_virtualenvs = (
-                [config.wsl_virtualenvs]
-                if isinstance(config.wsl_virtualenvs, (str, Path))
-                else config.wsl_virtualenvs
-            )
-
-            for i in wsl_virtualenvs:
-                if verbosity:
-                    print(f"\tPreparing wsl environment {i}.")
-
-                wsl_config = config.copy()
-
-                wsl_config.virtualenvs = [i]
-
-                if not Path(i).exists():
-                    raise RuntimeError("Venv doesn't exists. Create it first with 'venvs.prepare_venvs()'")
-                terminal_do_command(
-                    f"wsl {i}/bin/python -m pip install mypythontools_cicd",
-                    verbose=verbose,
-                    error_header=f"Installing pytest to wsl venv {i} failed.",
-                )
-
-                test_config = " ".join(
-                    f"--{i} {j}"
-                    for i, j in wsl_config.get_dict().items()
-                    if i not in ["virtualenvs", "wsl_virtualenvs"]
-                )
-
-                terminal_do_command(
-                    f'wsl {i}/bin/python -m mypythontools_cicd --do_only test {test_config}"',
-                    cwd=tested_path.as_posix(),
-                    verbose=verbose,
-                    error_header="Tests failed.",
-                )
-
-    if not config.virtualenvs:
-        return
+    inner_verbosity = 2 if verbosity == 2 else 0
 
     extra_args = config.extra_args if config.extra_args else []
 
@@ -265,61 +256,74 @@ def run_tests(
     elif verbosity == 1:
         extra_args.append("--tb=short")
 
-    complete_args = (
-        "pytest",
-        tested_path_str,
-        *extra_args,
-    )
+    all_venvs = [*config.virtualenvs, *[f"wsl-{i}" for i in config.wsl_virtualenvs]]
+    if not all_venvs:
+        all_venvs = [sys.prefix]
 
-    test_command = " ".join(complete_args)
+    if config.prepare_test_venvs:
+        if verbosity:
+            print("\tPreparing test venvs")
+        prepare_venvs(path=config.prepare_test_venvs_path, versions=config.prepare_test_venvs, verbosity=0)
 
-    sync_requirements = config.sync_requirements
-    if (
-        sync_requirements
-        and sync_requirements != "infer"
-        and isinstance(sync_requirements, (Path, str, os.PathLike))
-    ):
-        sync_requirements = [sync_requirements]
-    sync_requirements = cast(list, sync_requirements)
+    for i, venv in enumerate(all_venvs):
+        if venv.startswith("wsl-"):
+            wsl = True
+            venv = venv[4:]
+        else:
+            wsl = False
 
-    virtualenvs = config.virtualenvs
+        used_path = tested_path if not wsl else WslPath(tested_path).wsl_path
+        tested_path_str = get_console_str_with_quotes(used_path)
 
-    if virtualenvs:
-        test_commands: list[str] = []
-        virtualenvs = [virtualenvs] if isinstance(virtualenvs, (str, Path)) else virtualenvs
-        for i in virtualenvs:
-            my_venv = Venv(i)
-            if not my_venv.installed:
-                raise RuntimeError(
-                    "Defined virtualenv not found. Use 'venvs.prepare_venvs' or install venvs manually."
-                )
-
-            if sync_requirements:
-                if verbosity:
-                    print(f"\tSyncing requirements in venv '{my_venv.venv_path.name}' for tests")
-                my_venv.sync_requirements(sync_requirements, verbose)
-            # To be able to not install dev requirements in older python venv, pytest is installed.
-            # Usually just respond with Requirements already satisfied.
-            my_venv.install_library("pytest")
-            test_commands.append(f"{my_venv.activate_command} && {test_command}")
-    else:
-        test_commands: list[str] = [test_command]
-
-    if config.test_coverage:
-        # Add coverage only to first virtualenv
-        xml_path = f"xml:{tests_path / 'coverage.xml'}"
-        cov_str = (
-            f" --cov {get_console_str_with_quotes(PROJECT_PATHS.app)} --cov-report "
-            f"{get_console_str_with_quotes(xml_path)}"
+        complete_args = (
+            "pytest",
+            tested_path_str,
+            *extra_args,
         )
 
-        test_commands[0] = test_commands[0] + cov_str
-    for i, command in enumerate(test_commands):
-        if verbosity and virtualenvs:
-            print(f"\tStarting tests with venv `{virtualenvs[i]}`")
+        test_command = " ".join(complete_args)
+
+        used_command = test_command
+        if i == 0:
+            if config.test_coverage:
+                # Add coverage only to first virtualenv
+                xml_path = f"xml:{tests_path / 'coverage.xml'}"
+                used_command = used_command + (
+                    f" --cov {get_console_str_with_quotes(PROJECT_PATHS.app)} --cov-report "
+                    f"{get_console_str_with_quotes(xml_path)}"
+                )
+
+        my_venv = Venv(venv, with_wsl=wsl)
+
+        if not my_venv.installed:
+            raise RuntimeError(
+                f"Defined virtualenv on {my_venv.venv_path} not found. Use 'prepare_test_venvs' or install "
+                "venvs manually."
+            )
+
+        if config.sync_test_requirements:
+            if verbosity:
+                print(
+                    f"\tSyncing requirements in{' wsl ' if wsl else ' '}venv '{my_venv.venv_path.name}' "
+                    "for tests"
+                )
+            my_venv.sync_requirements(config.sync_test_requirements, verbosity=inner_verbosity)
+
+        # To be able to not install dev requirements in older python venv, pytest is installed.
+        # Usually just respond with Requirements already satisfied.
+        my_venv.install_library("mypythontools_cicd[tests]")
+
+        used_command = f"{my_venv.activate_command} && {test_command}"
+
+        if verbosity:
+            print(f"\tStarting tests with {'wsl' if wsl else ''} venv `{venv}`")
 
         terminal_do_command(
-            command, cwd=tested_path.as_posix(), verbose=verbose, error_header="Tests failed."
+            used_command,
+            cwd=tested_path.as_posix(),
+            verbose=verbose,
+            error_header="Tests failed.",
+            with_wsl=wsl,
         )
 
     if config.test_coverage:
@@ -373,7 +377,7 @@ def setup_tests(
         np.random.seed(2)
 
 
-def add_readme_tests(readme_path: None | PathLike = None, test_folder_path: None | PathLike = None) -> None:
+def add_readme_tests(readme_path: None | PathLike = None, tests_folder_path: None | PathLike = None) -> None:
     """Generate pytest tests script file from README.md and save it to tests folder.
 
     Can be called from conftest.
@@ -381,7 +385,7 @@ def add_readme_tests(readme_path: None | PathLike = None, test_folder_path: None
     Args:
         readme_path (None | PathLike, optional): If None, autodetected (README.md, Readme.md or readme.md
             on root). Defaults to None.
-        test_folder_path (None | PathLike, optional): If None, autodetected (if root / tests).
+        tests_folder_path (None | PathLike, optional): If None, autodetected (if root / tests).
             Defaults to None.
 
     Raises:
@@ -403,19 +407,27 @@ def add_readme_tests(readme_path: None | PathLike = None, test_folder_path: None
         before block with setup code.
         If you want to skip some test, add ``<!--phmdoctest-mark.skip-->``
     """
-    readme_path = validate_path(readme_path) if readme_path else PROJECT_PATHS.readme
-    test_folder_path = validate_path(test_folder_path) if test_folder_path else PROJECT_PATHS.tests
+    readme_path = (
+        validate_path(readme_path, "'add_readme_tests' failed", "README")
+        if readme_path
+        else PROJECT_PATHS.readme
+    )
+    tests_folder_path = (
+        validate_path(tests_folder_path, "'add_readme_tests' failed", "tests_folder")
+        if tests_folder_path
+        else PROJECT_PATHS.tests
+    )
 
     readme_date_modified = str(readme_path.stat().st_mtime).split(".", maxsplit=1)[0]  # Keep only seconds
     readme_tests_name = f"test_readme_generated-{readme_date_modified}.py"
 
-    test_file_path = test_folder_path / readme_tests_name
+    test_file_path = tests_folder_path / readme_tests_name
 
     # File not changed from last tests
     if test_file_path.exists():
         return
 
-    for i in test_folder_path.glob("*"):
+    for i in tests_folder_path.glob("*"):
         if i.name.startswith("test_readme_generated"):
             i.unlink()
 

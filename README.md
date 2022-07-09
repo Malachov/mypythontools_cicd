@@ -13,9 +13,9 @@ If you are not sure whether the structure of your app will work with this code, 
 
 ## Links
 
-Official documentation - [readthedocs](https://mypythontools.readthedocs.io/)
+Official documentation - [readthedocs](https://mypythontools_cicd.readthedocs.io/)
 
-Official repo - [GitHub](https://github.com/Malachov/mypythontools)
+Official repo - [GitHub](https://github.com/Malachov/mypythontools_cicd)
 
 
 ## Installation
@@ -25,7 +25,7 @@ Python >=3.6 (Python 2 is not supported).
 Install with
 
 ```console
-pip install mypythontools
+pip install mypythontools_cicd
 ```
 
 ## Subpackages
@@ -34,21 +34,32 @@ Package is divided into several subpackages
 ### build
 Build your application to .exe with pyinstaller. It also builds javascript frontend with npm build if configured, which is used mostly in PyVueEel applications.
 
+### cicd
+Pipeline for all the other submodules, that provide configurable CI/CD.
+
 ### deploy
 Build package and push it to PyPi.
 
+### docs
+Provide documentation with sphinx.
+
+### git
+Works with git. You can check branch here, commit all changes or push to repository.
+
 ### misc
-Miscellaneous functions that are too small to have own subpackage.
+Miscellaneous functions that are too small to have own subpackage, like for example formatting with black.
+
+### packages
+For example, you can work with requirements here. Usually used in 'setup.py'.
 
 ### project_paths
 Subpackage where you can get paths used in your project (path to README,  \_\_init__.py etc.).
 
-### project_utils
-In project utils you can find many functions for CI/CD like formatting, docs creation, version setting etc.
-There is also pipelining function that will call them in defined order.
-
 ### tests
 Runs tests in more venvs with different python versions, also with wsl linux if configured and create coverage.
+
+### venvs
+Works with virtual environments.
 
 ## Mypythontools
 
@@ -58,13 +69,3 @@ https://github.com/Malachov/mypythontools
 
 This can help you with a lot of stuff around CICD like getting project paths, generating docs, testing,
 deploying to PyPi etc.
-
-**subpackages**
-
-- config
-- misc
-- paths
-- plots
-- property
-- terminal
-- type_hints

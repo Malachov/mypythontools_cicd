@@ -1,10 +1,10 @@
-"""Run cicd functions like formatting, testing or deploying.
+"""Run cicd functions from other modules in particular order and provide configuration.
 
 This module can be used for example in running deploy pipelines or githooks
 (some code automatically executed before commit). This module can run the tests,
 edit library version, generate rst files for docs, push to git or deploy app to pypi.
 
-All of that can be done with one function call - with `project_utils_pipeline` function that
+All of that can be done with one function call - with `cicd_pipeline` function that
 run other functions, or you can use functions separately. 
 
 Attributes:
@@ -19,10 +19,10 @@ Examples:
 
     Create folder utils, create `push_script.py` inside, add::
 
-        from mypythontools import cicd
+        from mypythontools_cicd.cicd import cicd_pipeline, default_pipeline_config
 
         if __name__ == "__main__":
-            cicd.project_utils.project_utils_pipeline(deploy=True)
+            cicd_pipeline(config=default_pipeline_config)
 
     **With terminal command**
 
@@ -51,7 +51,7 @@ Examples:
             {
                 "label": "Push to PyPi",
                 "command": "${command:python.interpreterPath}",
-                "args": ["-m", "mypythontools_cicd", "--do_only", "deploy"]
+                "args": ["-m", "mypythontools_cicd", "--do_only", "reformat"]
             },
           ]
         }
@@ -73,11 +73,10 @@ Examples:
 
     Then just import any function from here and call with desired params. E.g.
 """
-from mypythontools_cicd.project_utils.project_utils_pipeline_internal import (
+from mypythontools_cicd.cicd.cicd_internal import (
     default_pipeline_config,
     PipelineConfig,
-    project_utils_pipeline,
+    cicd_pipeline,
 )
-from mypythontools_cicd.project_utils import project_utils_functions
 
-__all__ = ["default_pipeline_config", "PipelineConfig", "project_utils_pipeline", "project_utils_functions"]
+__all__ = ["default_pipeline_config", "PipelineConfig", "cicd_pipeline"]

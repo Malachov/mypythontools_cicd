@@ -15,8 +15,6 @@ from mypythontools.system import (
     terminal_do_command,
 )
 
-import mylogging
-
 from ..project_paths import PROJECT_PATHS
 from .. import venvs
 
@@ -136,9 +134,7 @@ def build_app(
         except (PermissionError, OSError) as remove_exception:
 
             raise PermissionError(
-                mylogging.format_str(
-                    "App is opened (May be in another app(terminal, explorer...)). Close it first."
-                )
+                "App is opened (May be in another app(terminal, explorer...)). Close it first."
             ) from remove_exception
 
     # May be just name - not absolute

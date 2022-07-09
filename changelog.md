@@ -5,3 +5,6 @@
 - [x] Restructured to submodules
 - [x] Tests now supports multiple python versions 
 - [x] Config changed, so property is called with no function parameters. With parenthesis, it would fail. Reason is that annotations are now used for type and option checking, so less code and also for better IDE help and better intellisense. It is not possible to use custom getters and setters anymore.
+
+## 0.3.x - 06/2022
+- [x] Refactored out tests and project_paths

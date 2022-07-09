@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 import os
-import shutil
 
-import mylogging
+from typing_extensions import Literal
 
 from mypythontools.paths import validate_path, PathLike
-from mypythontools.misc import delete_files
+from mypythontools.misc import delete_files, print_progress
 from mypythontools.system import check_script_is_available, terminal_do_command, PYTHON
 
 from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 
 def deploy_to_pypi(
-    setup_path: None | PathLike = None, clean: bool = True, verbose: bool = True, pep517: bool = True
+    setup_path: None | PathLike = None,
+    clean: bool = True,
+    verbosity: Literal[0, 1, 2] = 1,
+    pep517: bool = False,
 ) -> None:
     """Publish python library to PyPi.
 
@@ -30,10 +32,14 @@ def deploy_to_pypi(
             If not, path will be inferred. Build and dist folders will be created in same directory.
             Defaults to None.
         clean (bool, optional): Whether delete created build and dist folders.
-        verbose (bool, optional): If True, result of terminal command will be printed to console.
-            Defaults to False.
-        pep517 (bool, optional): Whether using PEP 517, that use pyproject.toml to build distribution.
+        verbosity (Literal[0, 1, 2], optional): If 0, prints nothing, if 1, then one line description of what
+            happened is printed. If 3, all the results from terminal are printed. Defaults to 1.
+        pep517 (bool, optional): Whether using PEP 517, that use pyproject.toml to build distribution. Without
+            it it's faster, but with it, pyproject.TOML can be used. Defaults to False.
     """
+    print_progress("Deploying to PyPi", verbosity > 0)
+    verbose = verbosity == 2
+
     usr = os.environ.get("TWINE_USERNAME")
     password = os.environ.get("TWINE_PASSWORD")
 
@@ -42,7 +48,11 @@ def deploy_to_pypi(
 
     check_script_is_available("twine", "twine")
 
-    setup_path = PROJECT_PATHS.root / "setup.py" if not setup_path else validate_path(setup_path)
+    setup_path = (
+        validate_path(setup_path, "Deploy with `deploy_to_pypi` failed", "setup.py")
+        if setup_path
+        else PROJECT_PATHS.root / "setup.py"
+    )
 
     setup_dir_path = setup_path.parent
 

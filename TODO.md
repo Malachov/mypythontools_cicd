@@ -9,4 +9,6 @@
 - [ ] Better test coverage (doctest in functions + check if in coverage)
 - [ ] Check if in pyinstaller better way than hidden imports (add to analysis to build only necessary files)
 - [ ] Finish start vue in debug from python
- 
+- [ ] print_progress directly in functions, not in pipeline?
+- [ ] Create GIF of VS Code task
+- [ ] Check if in pyinstaller better way than hidden imports (add to analysis to build only necessary files)
