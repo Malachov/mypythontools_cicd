@@ -8,7 +8,6 @@ import warnings
 import os
 
 from typing_extensions import Literal
-import numpy as np
 
 import mylogging
 from mypythontools.paths import validate_path, PathLike, WslPath
@@ -349,7 +348,7 @@ def setup_tests(
         matplotlib_test_backend (bool, optional): If using matlplotlib, it need to be
             closed to continue tests. Change backend to agg. Defaults to False.
         set_numpy_random_seed (int | None): If using numpy random numbers, it will be each time the same.
-            Defaults to 2.
+            Numpy is not in requirements, so it need to be installed. Defaults to 2.
 
     """
     mylogging.config.colorize = False
@@ -374,6 +373,8 @@ def setup_tests(
         add_readme_tests()
 
     if set_numpy_random_seed:
+        import numpy as np
+
         np.random.seed(2)
 
 
