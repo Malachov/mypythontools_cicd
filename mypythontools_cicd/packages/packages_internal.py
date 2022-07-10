@@ -32,24 +32,24 @@ def get_requirements_files(requirements: Literal["infer"] | PathLike | Sequence[
 
     if requirements == "infer":
 
-        requirements_parsed = []
+        requirements_files = []
 
         for i in PROJECT_PATHS.root.glob("*"):
             if "requirements" in i.as_posix().lower() and i.suffix == ".txt":
-                requirements_parsed.append(i)
+                requirements_files.append(i)
 
-        if not requirements_parsed:
+        if not requirements_files:
             raise RuntimeError("No requirements found.")
 
     else:
         if isinstance(requirements, (Path, str, os.PathLike)):
             requirements = [requirements]
 
-        requirements_parsed = [
+        requirements_files = [
             validate_path(req, "'get_requirements_files' failed", "Requirements file") for req in requirements
         ]
 
-    return requirements_parsed
+    return requirements_files
 
 
 def get_requirements(paths: Literal["infer"] | PathLike | Sequence[PathLike]) -> list[str]:

@@ -21,6 +21,7 @@ from mypythontools.system import (
 
 from ..venvs import Venv, prepare_venvs
 from ..project_paths import PROJECT_PATHS
+from ..packages import get_requirements_files
 
 
 class TestConfig(Config):
@@ -224,10 +225,10 @@ def run_tests(
     Example:
         ``run_tests(verbosity=2)``
     """
-    print_progress("Testing", config.verbosity > 0)
-
     if not config.run_tests:
         return
+
+    print_progress("Testing", config.verbosity > 0)
 
     tested_path = (
         validate_path(config.tested_path, "Running tests failed", "tested_path")
@@ -306,11 +307,15 @@ def run_tests(
                     f"\tSyncing requirements in{' wsl ' if wsl else ' '}venv '{my_venv.venv_path.name}' "
                     "for tests"
                 )
-            my_venv.sync_requirements(config.sync_test_requirements, verbosity=inner_verbosity)
-
-        # To be able to not install dev requirements in older python venv, pytest is installed.
-        # Usually just respond with Requirements already satisfied.
-        my_venv.install_library("mypythontools_cicd[tests]")
+            my_venv.sync_requirements(
+                config.sync_test_requirements,
+                ["mypythontools_cicd[tests]"],
+                verbosity=inner_verbosity,
+            )
+        else:
+            # To be able to not install dev requirements in older python venv, pytest is installed.
+            # Usually just respond with Requirements already satisfied.
+            my_venv.install_library("mypythontools_cicd[tests]")
 
         used_command = f"{my_venv.activate_command} && {test_command}"
 

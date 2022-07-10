@@ -16,7 +16,9 @@ from mypythontools_cicd.cicd import cicd_pipeline, default_pipeline_config
 
 # default_pipeline_config.test.wsl_virtualenvs = None
 
-default_pipeline_config.deploy = False
+default_pipeline_config.deploy = True
+default_pipeline_config.test.sync_test_requirements = ["requirements/requirements_tests.txt"]
+
 default_pipeline_config.do_only = "test"
 default_pipeline_config.test.virtualenvs = []
 

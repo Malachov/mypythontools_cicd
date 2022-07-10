@@ -20,7 +20,7 @@ from mypythontools.system import (
 )
 
 from ..project_paths import PROJECT_PATHS
-from ..packages import get_requirements_files
+from ..packages import get_requirements
 from mypythontools_cicd.project_paths import PROJECT_PATHS
 
 
@@ -135,15 +135,17 @@ class Venv:
 
     def sync_requirements(
         self,
-        requirements: Literal["infer"] | PathLike | Sequence[PathLike] = "infer",
+        requirements_files: None | Literal["infer"] | PathLike | Sequence[PathLike] = "infer",
+        requirements: None | list[str] = None,
         verbosity: Literal[0, 1, 2] = 1,
     ) -> None:
         """Sync libraries based on requirements. Install missing, remove unnecessary.
 
         Args:
-            requirements (Literal["infer"] | PathLike | Sequence[PathLike], optional): Define what libraries
+            requirements_files (Literal["infer"] | PathLike | Sequence[PathLike], optional): Define what libraries
                 will be installed. If "infer", autodetected. Can also be a list of more files e.g
                 `["requirements.txt", "requirements_dev.txt"]`. Defaults to "infer".
+            requirements (list[str], optional): List of requirements. Defaults to None.
             verbosity (Literal[0, 1, 2], optional): If 0, prints nothing, if 1, then one line description of what
                 happened is printed. If 3, all the results from terminal are printed. Defaults to 1.
         """
@@ -152,13 +154,14 @@ class Venv:
         self._raise_if_not_installed()
 
         self.install_library("pip-tools")
-        requirements = get_requirements_files(requirements)
 
-        requirements_content = ""
+        requirements_all = []
 
-        for i in requirements:
-            with open(i, "r") as req:
-                requirements_content = requirements_content + "\n" + req.read()
+        if requirements_files:
+            requirements_all.extend(get_requirements(requirements_files))
+
+        if requirements:
+            requirements_all.extend(requirements)
 
         requirements_all_path = self.venv_path / "requirements_all.in"
         if isinstance(self.venv_path, WslPath):
@@ -173,7 +176,7 @@ class Venv:
             requirements_all_console_path_str = get_console_str_with_quotes(requirements_all_path)
 
         with open(requirements_all_path, "w") as requirement_libraries:
-            requirement_libraries.write(requirements_content)
+            requirement_libraries.write("\n".join(requirements_all))
 
         pip_compile_command = (
             f"pip-compile {requirements_all_console_path_str} --output-file "
@@ -232,7 +235,6 @@ class Venv:
             error_header="Library installation failed.",
             with_wsl=self.with_wsl,
         )
-        terminal_do_command(command, shell=True, verbose=verbose, error_header="Library installation failed.")
 
     def uninstall_library(self, name: str, verbose: bool = False) -> None:
         """Uninstall package to venv with pip install.
