@@ -13,15 +13,16 @@ if root_path_str not in sys.path:
     sys.path.insert(0, root_path_str)
 
 from mypythontools_cicd.cicd import cicd_pipeline, default_pipeline_config
+from mypythontools_cicd.tests import tests_internal as tests
 
-# default_pipeline_config.test.wsl_virtualenvs = None
-
-default_pipeline_config.deploy = True
-default_pipeline_config.test.sync_test_requirements = ["requirements/requirements_tests.txt"]
-
-default_pipeline_config.do_only = "test"
-default_pipeline_config.test.virtualenvs = []
+# default_pipeline_config.do_only = "test"
 
 if __name__ == "__main__":
+    config = default_pipeline_config.copy()
+
+    config.deploy = True
+    config.test.sync_test_requirements = ["requirements_tests.txt"]
+    config.test.sync_test_requirements_path = "requirements"
+
     # All the parameters can be overwritten via CLI args
-    cicd_pipeline(config=default_pipeline_config)
+    cicd_pipeline(config=config)

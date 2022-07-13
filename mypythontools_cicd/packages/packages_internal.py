@@ -16,12 +16,18 @@ from mypythontools_cicd.project_paths import PROJECT_PATHS
 # from setuptools import find_packages
 
 
-def get_requirements_files(requirements: Literal["infer"] | PathLike | Sequence[PathLike]) -> list[Path]:
+def get_requirements_files(
+    requirements: Literal["infer"] | PathLike | Sequence[PathLike], path: PathLike = PROJECT_PATHS.root
+) -> list[Path]:
     """Consolidate requirements into list of paths.
 
     Args:
         requirements (Literal["infer"] | PathLike | Sequence[PathLike]): E.g. ["requirements.txt",
             "requirements_dev.txt"]. If 'infer', then every file where requirements is in the name is used.
+            It's not recursive and works only on defined folder.
+        path (PathLike, optional): If using just names or relative path, and not found, define the root.
+            It's also necessary when using another referenced files. If inferring files, it's used to search.
+            Defaults to PROJECT_PATHS.root.
 
     Returns:
         list[Path]: List of paths to requirements files.
@@ -34,7 +40,7 @@ def get_requirements_files(requirements: Literal["infer"] | PathLike | Sequence[
 
         requirements_files = []
 
-        for i in PROJECT_PATHS.root.glob("*"):
+        for i in validate_path(path).glob("*"):
             if "requirements" in i.as_posix().lower() and i.suffix == ".txt":
                 requirements_files.append(i)
 
@@ -45,6 +51,10 @@ def get_requirements_files(requirements: Literal["infer"] | PathLike | Sequence[
         if isinstance(requirements, (Path, str, os.PathLike)):
             requirements = [requirements]
 
+        # When using just names or relative paths
+        requirements = [Path(path) / Path(i) if not Path(i).exists() else i for i in requirements]
+
+        # Enforce Path type and validate if exists
         requirements_files = [
             validate_path(req, "'get_requirements_files' failed", "Requirements file") for req in requirements
         ]
@@ -52,26 +62,33 @@ def get_requirements_files(requirements: Literal["infer"] | PathLike | Sequence[
     return requirements_files
 
 
-def get_requirements(paths: Literal["infer"] | PathLike | Sequence[PathLike]) -> list[str]:
+def get_requirements(
+    files: Literal["infer"] | PathLike | Sequence[PathLike], path: PathLike = PROJECT_PATHS.root
+) -> list[str]:
     """Get requirements into variable usually used in setup.py.
 
     Args:
-        paths (Literal["infer"] | PathLike | Sequence[PathLike]): E.g. ["requirements.txt",
+        files (Literal["infer"] | PathLike | Sequence[PathLike]): E.g. ["requirements.txt",
             "requirements_dev.txt"]. If 'infer', then every file where requirements is in the name is used.
+            It can be also absolute paths.
+        path (PathLike, optional): If using just names or relative path, and not found, define the root.
+            It's also necessary when using another referenced files. If inferring files, it's used to search.
+            Defaults to PROJECT_PATHS.root.
 
     Returns:
         list[str]: List of requirements
     """
-    files = get_requirements_files(paths)
+    files = get_requirements_files(files, path)
     all_requirements = []
 
     for file in files:
+
         with open(file) as f:
             requirements = f.readlines()
         requirements = [i.strip("\r\n") for i in requirements if i.strip("\r\n")]
 
         # narrow_requirements calls recursively get_requirements so it can have another -r reference
-        requirements = narrow_requirements(requirements)
+        requirements = narrow_requirements(requirements, path)
         requirements = [str(requirement) for requirement in pkg_resources.parse_requirements(requirements)]
         all_requirements.extend(requirements)
 
@@ -89,12 +106,12 @@ def narrow_requirements(requirements: list[str], path: PathLike = "requirements"
     Returns:
         list[str]: List of plain pep 508 compatible requirements.
     """
-    path = validate_path(path, "'narrow_requirements' failed", "File referenced in requirements file")
+    path = validate_path(path, "'narrow_requirements' failed", "Path with referenced requirements")
 
     for i in requirements:
         if i.startswith("-r "):
             req_name = i[3:].strip("\r\n")
-            requirements.extend(get_requirements(path / req_name))
+            requirements.extend(get_requirements(path / req_name, path=path))
     requirements = [i for i in requirements if not i.startswith("-r ")]
     return requirements
 

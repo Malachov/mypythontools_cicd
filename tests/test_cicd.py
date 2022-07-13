@@ -18,14 +18,16 @@ test_project_path = Path("tests").resolve() / "tested project"
 
 
 def test_cicd_pipeline():
-    config = cicd.cicd.default_pipeline_config
+    config = cicd.cicd.default_pipeline_config.copy()
 
     config.git_push = False
     config.git_commit_all = None
     config.version = None
     config.deploy = False
+    config.sync_requirements = None
     config.allowed_branches = None
     config.test = cicd.tests.TestConfig()
+    config.test.prepare_test_venvs = None
     config.test.update({"virtualenvs": [sys.prefix], "wsl_virtualenvs": [], "sync_test_requirements": None})
 
     cicd.cicd.cicd_pipeline(config)

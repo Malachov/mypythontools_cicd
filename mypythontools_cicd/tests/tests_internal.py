@@ -1,11 +1,9 @@
 """Module with functions for 'tests' subpackage."""
 
 from __future__ import annotations
-from typing import Sequence, cast
-from pathlib import Path
+from typing import Sequence
 import sys
 import warnings
-import os
 
 from typing_extensions import Literal
 
@@ -21,7 +19,9 @@ from mypythontools.system import (
 
 from ..venvs import Venv, prepare_venvs
 from ..project_paths import PROJECT_PATHS
-from ..packages import get_requirements_files
+
+INTERNAL_TESTS_PATH = ""
+"""This is only for internal use."""
 
 
 class TestConfig(Config):
@@ -163,11 +163,27 @@ class TestConfig(Config):
         Default:
             ["requirements.txt"]
 
-        If using `virtualenvs` define what libraries will be installed by path to requirements.txt. Can
+        If using `virtualenvs` define what libraries will be installed by path to requirements. It can
         also be a list of more files e.g ``["requirements.txt", "requirements_dev.txt"]``. If "infer",
-        auto detected (all requirements).
+        auto detected (all requirements), not recursively, only on defined path.
         """
         return ["requirements.txt"]
+
+    @MyProperty
+    @staticmethod
+    def sync_test_requirements_path() -> PathLike:
+        """Define the root if using just names or relative path, and not found.
+
+        Type:
+            PathLike
+
+        Default:
+            PROJECT_PATHS.root
+
+        It's also necessary when using another referenced files. If inferring files, it's used to search.
+        Defaults to PROJECT_PATHS.root.
+        """
+        return PROJECT_PATHS.root
 
     @MyProperty
     @staticmethod
@@ -311,11 +327,15 @@ def run_tests(
                 config.sync_test_requirements,
                 ["mypythontools_cicd[tests]"],
                 verbosity=inner_verbosity,
+                path=config.sync_test_requirements_path,
             )
+
+        # To be able to not install dev requirements in older python venv, pytest is installed.
+        # Usually just respond with Requirements already satisfied.
+        if INTERNAL_TESTS_PATH:
+            my_venv.install_library(f"{INTERNAL_TESTS_PATH}[tests]")
         else:
-            # To be able to not install dev requirements in older python venv, pytest is installed.
-            # Usually just respond with Requirements already satisfied.
-            my_venv.install_library("mypythontools_cicd[tests]")
+            my_venv.install_library("mypythontools_cicd[tests]", upgrade=True)
 
         used_command = f"{my_venv.activate_command} && {test_command}"
 
@@ -353,7 +373,8 @@ def setup_tests(
         matplotlib_test_backend (bool, optional): If using matlplotlib, it need to be
             closed to continue tests. Change backend to agg. Defaults to False.
         set_numpy_random_seed (int | None): If using numpy random numbers, it will be each time the same.
-            Numpy is not in requirements, so it need to be installed. Defaults to 2.
+            Numpy is not in requirements, so it need to be installed. It's skipped if not available.
+            Defaults to 2.
 
     """
     mylogging.config.colorize = False
@@ -378,9 +399,12 @@ def setup_tests(
         add_readme_tests()
 
     if set_numpy_random_seed:
-        import numpy as np
+        try:
+            import numpy as np
 
-        np.random.seed(2)
+            np.random.seed(2)
+        except ModuleNotFoundError:
+            pass
 
 
 def add_readme_tests(readme_path: None | PathLike = None, tests_folder_path: None | PathLike = None) -> None:

@@ -12,10 +12,11 @@ root = Path(__file__).parent.resolve()
 if root not in sys.path:
     sys.path.insert(0, root.as_posix())
 
-from mypythontools_cicd.tests import setup_tests
+from mypythontools_cicd.tests import tests_internal as tests
 from mypythontools_cicd.project_paths import PROJECT_PATHS
 
-setup_tests()
+tests.INTERNAL_TESTS_PATH = root
+tests.setup_tests()
 
 # Can be loaded from tests here or tests in test project
 test_project_path = (

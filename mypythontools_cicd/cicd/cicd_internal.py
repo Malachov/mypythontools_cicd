@@ -17,6 +17,7 @@ from .. import tests
 from ..deploy import deploy_to_pypi
 from ..docs import docs_regenerate
 from ..misc import reformat_with_black
+from ..project_paths import PROJECT_PATHS
 
 from ..packages import (
     get_version,
@@ -141,9 +142,26 @@ class PipelineConfig(Config):
         Default:
             None
 
-        You can use path to requirements, list of paths or bool value. If True, then path is inferred.
+        You can use path to requirements, list of paths. If "infer", auto detected (all requirements), not
+        recursively, only on defined path.
         """
         return None
+
+    @MyProperty
+    @staticmethod
+    def sync_requirements_path() -> PathLike:
+        """Define the root if using just names or relative path, and not found.
+
+        Type:
+            PathLike
+
+        Default:
+            PROJECT_PATHS.root
+
+        It's also necessary when using another referenced files. If inferring files, it's used to search.
+        Defaults to PROJECT_PATHS.root.
+        """
+        return PROJECT_PATHS.root
 
     @MyProperty
     @staticmethod
@@ -325,7 +343,6 @@ def cicd_pipeline(
             config.verbosity = 0
 
     verbosity = config.verbosity
-    verbose = verbosity == 2
     progress_is_printed = verbosity > 0
 
     if config.prepare_venvs:
@@ -348,7 +365,9 @@ def cicd_pipeline(
         if not venvs.is_venv:
             raise RuntimeError("'sync_requirements' available only if using virtualenv.")
         my_venv = venvs.Venv(sys.prefix)
-        my_venv.sync_requirements(config.sync_requirements, verbosity=verbosity)
+        my_venv.sync_requirements(
+            config.sync_requirements, verbosity=verbosity, path=config.sync_requirements_path
+        )
 
     if config.test:
         tests.run_tests(config.test)

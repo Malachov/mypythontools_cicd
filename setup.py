@@ -14,7 +14,7 @@ from mypythontools_cicd import packages
 if __name__ == "__main__":
 
     extras_requirements = {
-        i: packages.get_requirements(f"requirements/requirements_extras_{i}.txt")
+        i: packages.get_requirements(f"requirements_extras_{i}.txt", "requirements")
         for i in [
             "all",
             "build",
@@ -35,7 +35,7 @@ if __name__ == "__main__":
         **packages.personal_setup_args_preset,
         description="Some tools/functions/snippets used across projects.",
         long_description=packages.get_readme(),
-        install_requires=packages.get_requirements("requirements/requirements.txt"),
+        install_requires=packages.get_requirements("requirements.txt", "requirements"),
         extras_require=extras_requirements,
         entry_points={
             "console_scripts": [

@@ -129,7 +129,7 @@ from mypythontools_cicd import tests
 
 __all__ = ["build", "deploy", "packages", "project_paths", "cicd", "tests", "venvs"]
 
-__version__ = "0.0.26"
+__version__ = "0.0.27"
 
 __author__ = "Daniel Malachov"
 __license__ = "MIT"

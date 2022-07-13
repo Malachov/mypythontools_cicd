@@ -41,13 +41,13 @@ class Venv:
         >>> from pathlib import Path
         >>> from mypythontools.system import is_wsl
         ...
-        >>> path = "venv/3.10" if platform.system() == "Windows" else "venv/wsl-3.10"
+        >>> path = "venv/doctest/3.10" if platform.system() == "Windows" and not is_wsl() else "venv/doctest/wsl-3.10"
         >>> venv = Venv(path)
         >>> venv.create()  # If already exists, it's skipped
         >>> venv.install_library("colorama==0.3.9")
         >>> "colorama==0.3.9" in venv.list_packages()
         True
-        >>> venv.sync_requirements(verbosity=0)  # There ia a 0.4.4 in requirements.txt
+        >>> venv.sync_requirements(verbosity=0, path=PROJECT_PATHS.root)  # There ia a 0.4.4 in requirements.txt
         >>> "colorama==0.4.4" in venv.list_packages()
         True
         >>> venv.remove()
@@ -98,7 +98,7 @@ class Venv:
 
         else:
             activate_path = venv_path / "bin" / "activate"
-            self.installed = (venv_path / "bin" / "activate").exists()
+            self.installed = activate_path.exists()
             self.executable = venv_path / "bin" / "python"
             self.create_command = f"python3 -m venv {self.venv_path_console_str}"
             self.scripts_path = venv_path / "bin"
@@ -133,11 +133,13 @@ class Venv:
             )
         self.installed = True
 
+    # TODO add "find_requirements.txt" to literal to find and install it when in requirements/requirements.txt
     def sync_requirements(
         self,
         requirements_files: None | Literal["infer"] | PathLike | Sequence[PathLike] = "infer",
         requirements: None | list[str] = None,
         verbosity: Literal[0, 1, 2] = 1,
+        path: PathLike = PROJECT_PATHS.root,
     ) -> None:
         """Sync libraries based on requirements. Install missing, remove unnecessary.
 
@@ -146,8 +148,11 @@ class Venv:
                 will be installed. If "infer", autodetected. Can also be a list of more files e.g
                 `["requirements.txt", "requirements_dev.txt"]`. Defaults to "infer".
             requirements (list[str], optional): List of requirements. Defaults to None.
-            verbosity (Literal[0, 1, 2], optional): If 0, prints nothing, if 1, then one line description of what
-                happened is printed. If 3, all the results from terminal are printed. Defaults to 1.
+            verbosity (Literal[0, 1, 2], optional): If 0, prints nothing, if 1, then one line description of
+                what happened is printed. If 3, all the results from terminal are printed. Defaults to 1.
+            path (PathLike, optional): If using just names or relative path, and not found, define the root.
+                It's also necessary when using another referenced files. If inferring files, it's used to
+                search. Defaults to PROJECT_PATHS.root.
         """
         print_progress("Syncing requirements", verbosity > 0)
 
@@ -158,7 +163,7 @@ class Venv:
         requirements_all = []
 
         if requirements_files:
-            requirements_all.extend(get_requirements(requirements_files))
+            requirements_all.extend(get_requirements(requirements_files, path))
 
         if requirements:
             requirements_all.extend(requirements)
@@ -213,7 +218,7 @@ class Venv:
 
         return result
 
-    def install_library(self, name: str, verbose: bool = False, update: bool = False) -> None:
+    def install_library(self, name: str, verbose: bool = False, upgrade: bool = False) -> None:
         """Install package to venv with pip install.
 
         You can use extras with square brackets.
@@ -222,12 +227,12 @@ class Venv:
             name (str): Name of installed library.
             verbose (bool, optional): If True, result of terminal command will be printed to console.
                 Defaults to False.
-            update (bool, optional): Update flag. If True, then latest is installed. If False, and already
+            upgrade (bool, optional): Update flag. If True, then latest is installed. If False, and already
                 exists, it's skipped. Defaults to False
         """
         self._raise_if_not_installed()
 
-        command = f"{self.activate_command} {SHELL_AND} {self.executable_str} -m pip install {name} {'--update' if update else ''}"
+        command = f"{self.activate_command} {SHELL_AND} {self.executable_str} -m pip install {name} {'--upgrade' if upgrade else ''}"
         terminal_do_command(
             command,
             shell=True,
@@ -254,6 +259,7 @@ class Venv:
             verbose=verbose,
             error_header="Library removal failed",
             with_wsl=self.with_wsl,
+            input="y",
         )
 
     def remove(self) -> None:
