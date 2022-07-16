@@ -1,5 +1,4 @@
 - [ ] Try to make oneliner config. Try property decorator on variable
-- [ ] Add do-just option or add sys args to functions so single task can be executed simply
 - [ ] Remove project.rst as it is in index.rst via automodule
 - [ ] In configuration use type annotation for type verification. Implement Literal as options.
 - [ ] Check if coverage from doctest included
@@ -11,4 +10,3 @@
 - [ ] Finish start vue in debug from python
 - [ ] print_progress directly in functions, not in pipeline?
 - [ ] Create GIF of VS Code task
-- [ ] Check if in pyinstaller better way than hidden imports (add to analysis to build only necessary files)

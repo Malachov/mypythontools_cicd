@@ -13,12 +13,12 @@ if root_path_str not in sys.path:
     sys.path.insert(0, root_path_str)
 
 from mypythontools_cicd.cicd import cicd_pipeline, default_pipeline_config
-from mypythontools_cicd.tests import tests_internal as tests
 
-# default_pipeline_config.do_only = "test"
 
 if __name__ == "__main__":
     config = default_pipeline_config.copy()
+
+    config.do_only = "git_commit_all"
 
     config.deploy = True
     config.test.sync_test_requirements = ["requirements_tests.txt"]
