@@ -1,6 +1,6 @@
 # Anytime when change something, it needs to be appended also to tests - sync_requirements
 
--r requirements_extras_venvs.txt
+-r extras_venvs.txt
 
 nbmake
 phmdoctest

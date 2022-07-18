@@ -333,7 +333,7 @@ def run_tests(
         # To be able to not install dev requirements in older python venv, pytest is installed.
         # Usually just respond with Requirements already satisfied.
         if INTERNAL_TESTS_PATH:
-            my_venv.install_library(f"{INTERNAL_TESTS_PATH}[tests]")
+            my_venv.install_library(".[tests]", upgrade=True, path=INTERNAL_TESTS_PATH)
         else:
             my_venv.install_library("mypythontools_cicd[tests]", upgrade=True)
 

@@ -19,10 +19,7 @@ from ..docs import docs_regenerate
 from ..misc import reformat_with_black
 from ..project_paths import PROJECT_PATHS
 
-from ..packages import (
-    get_version,
-    set_version,
-)
+from .. import packages
 
 
 class PipelineConfig(Config):
@@ -194,11 +191,11 @@ class PipelineConfig(Config):
 
     @MyProperty
     @staticmethod
-    def tag() -> str:
+    def tag() -> str | None:
         """Tag. E.g 'v1.1.2'. If '__version__', get the version.
 
         Type:
-            str
+            str | None
 
         Default:
             '__version__'
@@ -345,11 +342,6 @@ def cicd_pipeline(
     verbosity = config.verbosity
     progress_is_printed = verbosity > 0
 
-    if config.prepare_venvs:
-        venvs.prepare_venvs(
-            path=config.prepare_venvs_path, versions=config.prepare_venvs, verbosity=verbosity
-        )
-
     if config.allowed_branches:
         git.check_branch(config.allowed_branches)
 
@@ -360,6 +352,22 @@ def cicd_pipeline(
 
         if not usr or not pas:
             raise KeyError("Setup env vars TWINE_USERNAME and TWINE_PASSWORD to use deploy.")
+
+    if config.tag:
+        if config.tag == "__version__":
+            tag = config.version
+            if tag == "increment":
+                tag = f"v{packages.increment_version(packages.get_version())}"
+            if not tag:
+                tag = packages.get_version()
+        else:
+            tag = config.tag
+        git.check_tag(tag)
+
+    if config.prepare_venvs:
+        venvs.prepare_venvs(
+            path=config.prepare_venvs_path, versions=config.prepare_venvs, verbosity=verbosity
+        )
 
     if config.sync_requirements:
         if not venvs.is_venv:
@@ -377,16 +385,16 @@ def cicd_pipeline(
 
     if config.version and config.version != "None":
         print_progress("Setting version", progress_is_printed)
-        original_version = get_version()
-        set_version(config.version)
+        original_version = packages.get_version()
+        packages.set_version(config.version)
+
+    if config.docs:
+        docs_regenerate(verbosity=verbosity)
+
+    if config.git_commit_all:
+        git.commit_all(config.git_commit_all, verbosity=verbosity)
 
     try:
-        if config.docs:
-            docs_regenerate(verbosity=verbosity)
-
-        if config.git_commit_all:
-            git.commit_all(config.git_commit_all, verbosity=verbosity)
-
         if config.git_push:
             git.push(
                 tag=config.tag,
@@ -396,11 +404,12 @@ def cicd_pipeline(
 
     except Exception as err:  # pylint: disable=broad-except
         if config.version:
-            set_version(original_version)  # type: ignore
+            packages.set_version(original_version)  # type: ignore
 
         raise RuntimeError(
             f"{3 * EMOJIS.DISAPPOINTMENT} Utils pipeline failed {3 * EMOJIS.DISAPPOINTMENT} \n\n"
-            "Original version restored. Nothing was pushed to repo, you can restart pipeline."
+            f"{'Original version restored. ' if config.version else ''}Nothing was pushed to repo, "
+            "you can restart pipeline. Commit already created."
         ) from err
 
     try:

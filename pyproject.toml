@@ -15,4 +15,4 @@ doctest_optionflags = "NORMALIZE_WHITESPACE NUMBER ELLIPSIS IGNORE_EXCEPTION_DET
 line-length = 110
 
 [build-system]
-requires = ["build", "typing_extensions", "setuptools", "mylogging", "pandas", "mypythontools"]
+requires = ["build", "typing_extensions", "setuptools", "mylogging", "pandas",  "wheel", "mypythontools"]

@@ -20,6 +20,10 @@ from ..project_paths import PROJECT_PATHS
 from ..packages import get_version
 
 
+class TagAlreadyExists(Exception):
+    pass
+
+
 def commit_all(commit_message: str, verbosity: Literal[0, 1, 2] = 1):
     """Stage all changes and create a commit.
 
@@ -34,7 +38,7 @@ def commit_all(commit_message: str, verbosity: Literal[0, 1, 2] = 1):
 
 
 def push(
-    tag: str = "__version__",
+    tag: str | None = "__version__",
     tag_message: str = "New version",
     verbosity: Literal[0, 1, 2] = 1,
 ) -> None:
@@ -43,7 +47,7 @@ def push(
     If tag is `__version__`, then tag is inferred from `__init__.py`.
 
     Args:
-        tag (str, optional): Define tag used in push. If tag is '__version__', than is automatically generated
+        tag (str | None, optional): Define tag used in push. If tag is '__version__', than is automatically generated
             from __init__ version. E.g from '1.0.2' to 'v1.0.2'.  Defaults to '__version__'.
         tag_message (str, optional): Message in annotated tag. Defaults to 'New version'.
         verbosity (Literal[0, 1, 2], optional): If 0, prints nothing, if 1, then one line description of what
@@ -61,12 +65,13 @@ def push(
         tag = f"v{get_version()}"
 
     if tag:
+        check_tag(tag)
         if not tag_message:
             tag_message = "New version"
         try:
             git.repo.Repo(PROJECT_PATHS.root.as_posix()).create_tag(tag, message=tag_message)
         except GitCommandError as err:
-            raise RuntimeError("Tag creation failed. It can be because such a tag already exists.") from err
+            raise RuntimeError("Tag creation failed.") from err
 
         git_command += " --follow-tags"
 
@@ -76,6 +81,23 @@ def push(
     except RuntimeError as err:
         git.repo.Repo(PROJECT_PATHS.root.as_posix()).delete_tag(tag)  # type: ignore
         raise RuntimeError("Push to git failed. Version restored and created git tag deleted.") from err
+
+
+def check_tag(tag: str):
+    """Check if tag is not already in repo, so it can be created afterwards.
+
+    Args:
+        tag (str): Tag name. E.g. 'v.0.0.3'
+
+    Raises:
+        TagAlreadyExists: If tag already exists in repo.
+    """
+    import git.repo
+
+    repo = git.repo.Repo(PROJECT_PATHS.root.as_posix())
+
+    if tag in [i.name for i in repo.tags]:
+        raise TagAlreadyExists(f"Tag '{tag}' already exists.")
 
 
 def check_branch(allowed_branches: Sequence[str]):

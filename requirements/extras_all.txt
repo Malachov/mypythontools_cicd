@@ -1,0 +1,3 @@
+-r requirements.txt
+-r extras_cicd.txt
+-r extras_dev.txt

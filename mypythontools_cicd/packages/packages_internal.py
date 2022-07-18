@@ -141,6 +141,41 @@ def get_readme() -> str:
     return readme
 
 
+def get_version(init_path: None | PathLike = None) -> str:
+    """Get version info from `__init__.py` file.
+
+    Args:
+        init_path (None | PathLike, optional): Path to `__init__.py` file. If None, will be inferred.
+            Defaults to None.
+
+    Returns:
+        str: String of version from `__init__.py`.
+
+    Raises:
+        ValueError: If no `__version__` is find. Try set init_path...
+
+    Example:
+        >>> version = get_version()
+        >>> len(version.split(".")) == 3 and all([i.isdecimal() for i in version.split(".")])
+        True
+    """
+    init_path = init_path if init_path else PROJECT_PATHS.init
+    try:
+        init_path = validate_path(init_path)
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Setting version failed. '__init__.py' not found on '{init_path}'."
+        ) from None
+
+    with open(init_path.as_posix(), "r") as init_file:
+        version = re.findall('__version__ = "(.*)"', init_file.read())[0]
+
+    if validate_version(version):
+        return version
+    else:
+        raise RuntimeError("Version not found in __init__.py")
+
+
 def set_version(
     version: str = "increment",
     init_path: None | PathLike = None,
@@ -184,10 +219,7 @@ def set_version(
                 delimited = j.split(delimiter)
 
                 if version == "increment":
-                    version_list = delimited[1].split(".")
-                    version_list[2] = str(int(version_list[2]) + 1)
-                    delimited[1] = ".".join(version_list)
-
+                    delimited[1] = increment_version(delimited[1])
                 else:
                     delimited[1] = version
 
@@ -202,39 +234,24 @@ def set_version(
         init_file.writelines(list_of_lines)
 
 
-def get_version(init_path: None | PathLike = None) -> str:
-    """Get version info from `__init__.py` file.
+def increment_version(version: str) -> str:
+    """Increment patch version by one.
 
     Args:
-        init_path (None | PathLike, optional): Path to `__init__.py` file. If None, will be inferred.
-            Defaults to None.
+        version (str): String format. It can include 'v' prefix.
 
     Returns:
-        str: String of version from `__init__.py`.
-
-    Raises:
-        ValueError: If no `__version__` is find. Try set init_path...
+        str: Incremented version
 
     Example:
-        >>> version = get_version()
-        >>> len(version.split(".")) == 3 and all([i.isdecimal() for i in version.split(".")])
-        True
+        >>> increment_version("1.2.3")
+        '1.2.4'
+        >>> increment_version("v1.2.3")
+        'v1.2.4'
     """
-    init_path = init_path if init_path else PROJECT_PATHS.init
-    try:
-        init_path = validate_path(init_path)
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            f"Setting version failed. '__init__.py' not found on '{init_path}'."
-        ) from None
-
-    with open(init_path.as_posix(), "r") as init_file:
-        version = re.findall('__version__ = "(.*)"', init_file.read())[0]
-
-    if validate_version(version):
-        return version
-    else:
-        raise RuntimeError("Version not found in __init__.py")
+    version_list = version.split(".")
+    version_list[2] = str(int(version_list[2]) + 1)
+    return ".".join(version_list)
 
 
 def get_package_setup_args(

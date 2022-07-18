@@ -1,0 +1,8 @@
+-r extras_build.txt
+-r extras_deploy.txt
+-r extras_docs.txt
+-r extras_git.txt
+-r extras_misc.txt
+-r extras_packages.txt
+-r extras_tests.txt
+-r extras_venvs.txt

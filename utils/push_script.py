@@ -18,10 +18,10 @@ from mypythontools_cicd.cicd import cicd_pipeline, default_pipeline_config
 if __name__ == "__main__":
     config = default_pipeline_config.copy()
 
-    config.do_only = "git_commit_all"
+    # config.do_only = "git_push"
 
     config.deploy = True
-    config.test.sync_test_requirements = ["requirements_tests.txt"]
+    config.test.sync_test_requirements = ["tests.txt"]
     config.test.sync_test_requirements_path = "requirements"
 
     # All the parameters can be overwritten via CLI args

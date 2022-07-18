@@ -218,7 +218,9 @@ class Venv:
 
         return result
 
-    def install_library(self, name: str, verbose: bool = False, upgrade: bool = False) -> None:
+    def install_library(
+        self, name: str, verbose: bool = False, upgrade: bool = False, path: None | PathLike = None
+    ) -> None:
         """Install package to venv with pip install.
 
         You can use extras with square brackets.
@@ -229,6 +231,8 @@ class Venv:
                 Defaults to False.
             upgrade (bool, optional): Update flag. If True, then latest is installed. If False, and already
                 exists, it's skipped. Defaults to False
+            path (None | Pathlike, optional): If installing from local path, this is path from where you can use
+                relative paths. Defaults to None.
         """
         self._raise_if_not_installed()
 
@@ -239,6 +243,7 @@ class Venv:
             verbose=verbose,
             error_header="Library installation failed.",
             with_wsl=self.with_wsl,
+            cwd=path,
         )
 
     def uninstall_library(self, name: str, verbose: bool = False) -> None:

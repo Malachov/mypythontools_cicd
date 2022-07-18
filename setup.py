@@ -14,7 +14,7 @@ from mypythontools_cicd import packages
 if __name__ == "__main__":
 
     extras_requirements = {
-        i: packages.get_requirements(f"requirements_extras_{i}.txt", "requirements")
+        i: packages.get_requirements(f"extras_{i}.txt", "requirements")
         for i in [
             "all",
             "build",
