@@ -28,8 +28,7 @@ class TestConfig(Config):
     """Allow to setup tests."""
 
     @MyProperty
-    @staticmethod
-    def tested_path() -> None | PathLike:
+    def tested_path(self) -> None | PathLike:
         """Define path of tested folder.
 
         Type:
@@ -43,8 +42,7 @@ class TestConfig(Config):
         return None
 
     @MyProperty
-    @staticmethod
-    def run_tests() -> bool:
+    def run_tests(self) -> bool:
         """Define whether run tests or not.
 
         Type:
@@ -56,8 +54,7 @@ class TestConfig(Config):
         return True
 
     @MyProperty
-    @staticmethod
-    def tests_path() -> None | PathLike:
+    def tests_path(self) -> None | PathLike:
         """If None, tests is used. It means where venv will be stored etc.
 
         Type:
@@ -69,8 +66,7 @@ class TestConfig(Config):
         return None
 
     @MyProperty
-    @staticmethod
-    def prepare_test_venvs() -> None | list[str]:
+    def prepare_test_venvs(self) -> None | list[str]:
         """Create venvs with defined versions.
 
         Type:
@@ -82,8 +78,7 @@ class TestConfig(Config):
         return ["3.7", "3.10", "wsl-3.7", "wsl-3.10"]
 
     @MyProperty
-    @staticmethod
-    def prepare_test_venvs_path() -> PathLike:
+    def prepare_test_venvs_path(self) -> PathLike:
         """Prepare venvs in defined path.
 
         Type:
@@ -95,8 +90,7 @@ class TestConfig(Config):
         return "tests/venv"
 
     @MyProperty
-    @staticmethod
-    def test_coverage() -> bool:
+    def test_coverage(self) -> bool:
         """Whether run test coverage plugin. If True, pytest-cov must be installed.
 
         Type:
@@ -108,8 +102,7 @@ class TestConfig(Config):
         return True
 
     @MyProperty
-    @staticmethod
-    def stop_on_first_error() -> bool:
+    def stop_on_first_error(self) -> bool:
         """Whether stop on first error.
 
         Type:
@@ -121,8 +114,7 @@ class TestConfig(Config):
         return True
 
     @MyProperty
-    @staticmethod
-    def virtualenvs() -> Sequence[PathLike]:
+    def virtualenvs(self) -> Sequence[PathLike]:
         """Virtualenvs used to testing. It's used to be able to test more python versions at once.
 
         Example:
@@ -140,8 +132,7 @@ class TestConfig(Config):
         return ["tests/venv/3.7", "tests/venv/3.10"]
 
     @MyProperty
-    @staticmethod
-    def wsl_virtualenvs() -> Sequence[PathLike]:
+    def wsl_virtualenvs(self) -> Sequence[PathLike]:
         """Define which wsl virtual environments will be tested via wsl.
 
         Type:
@@ -153,8 +144,7 @@ class TestConfig(Config):
         return ["tests/venv/wsl-3.7", "tests/venv/wsl-3.10"]
 
     @MyProperty
-    @staticmethod
-    def sync_test_requirements() -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
+    def sync_test_requirements(self) -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
         """Define whether update libraries versions.
 
         Type:
@@ -170,8 +160,7 @@ class TestConfig(Config):
         return ["requirements.txt"]
 
     @MyProperty
-    @staticmethod
-    def sync_test_requirements_path() -> PathLike:
+    def sync_test_requirements_path(self) -> PathLike:
         """Define the root if using just names or relative path, and not found.
 
         Type:
@@ -186,8 +175,7 @@ class TestConfig(Config):
         return PROJECT_PATHS.root
 
     @MyProperty
-    @staticmethod
-    def verbosity() -> Literal[0, 1, 2]:
+    def verbosity(self) -> Literal[0, 1, 2]:
         """Define whether print details on errors or keep silent.
 
         Type:
@@ -202,8 +190,7 @@ class TestConfig(Config):
         return 1
 
     @MyProperty
-    @staticmethod
-    def extra_args() -> None | list:
+    def extra_args(self) -> None | list:
         """List of args passed to pytest.
 
         Type:

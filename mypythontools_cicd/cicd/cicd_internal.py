@@ -30,8 +30,9 @@ class PipelineConfig(Config):
         self.test: tests.TestConfig = tests.default_test_config
 
     @MyProperty
-    @staticmethod
-    def do_only() -> Literal[
+    def do_only(
+        self,
+    ) -> Literal[
         None,
         "prepare_venvs",
         "reformat",
@@ -59,8 +60,7 @@ class PipelineConfig(Config):
         return None
 
     @MyProperty
-    @staticmethod
-    def prepare_venvs() -> None | list[str]:
+    def prepare_venvs(self) -> None | list[str]:
         """Create venvs with defined versions.
 
         Type:
@@ -72,8 +72,7 @@ class PipelineConfig(Config):
         return None
 
     @MyProperty
-    @staticmethod
-    def prepare_venvs_path() -> PathLike:
+    def prepare_venvs_path(self) -> PathLike:
         """Prepare venvs in defined path.
 
         Type:
@@ -85,8 +84,7 @@ class PipelineConfig(Config):
         return "venv"
 
     @MyProperty
-    @staticmethod
-    def reformat() -> bool:
+    def reformat(self) -> bool:
         """Reformat all python files with black. Setup parameters in pyproject.toml.
 
         Type:
@@ -98,8 +96,7 @@ class PipelineConfig(Config):
         return True
 
     @MyProperty
-    @staticmethod
-    def version() -> None | str:
+    def version(self) -> None | str:
         """Overwrite __version__ in __init__.py.
 
         Type:
@@ -114,8 +111,7 @@ class PipelineConfig(Config):
         return "increment"
 
     @MyProperty
-    @staticmethod
-    def docs() -> bool:
+    def docs(self) -> bool:
         """Define whether generate sphinx apidoc and generate rst files for documentation.
 
         Type:
@@ -129,8 +125,7 @@ class PipelineConfig(Config):
         return True
 
     @MyProperty
-    @staticmethod
-    def sync_requirements() -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
+    def sync_requirements(self) -> None | Literal["infer"] | PathLike | Sequence[PathLike]:
         """Check requirements.txt and update all the libraries.
 
         Type:
@@ -145,8 +140,7 @@ class PipelineConfig(Config):
         return None
 
     @MyProperty
-    @staticmethod
-    def sync_requirements_path() -> PathLike:
+    def sync_requirements_path(self) -> PathLike:
         """Define the root if using just names or relative path, and not found.
 
         Type:
@@ -161,8 +155,7 @@ class PipelineConfig(Config):
         return PROJECT_PATHS.root
 
     @MyProperty
-    @staticmethod
-    def git_commit_all() -> None | str:
+    def git_commit_all(self) -> None | str:
         """Whether take all the changes in repository and create a commit with these changes.
 
         Note:
@@ -177,8 +170,7 @@ class PipelineConfig(Config):
         return "New commit"
 
     @MyProperty
-    @staticmethod
-    def git_push() -> bool:
+    def git_push(self) -> bool:
         """Whether push to repository.
 
         Type:
@@ -190,8 +182,7 @@ class PipelineConfig(Config):
         return True
 
     @MyProperty
-    @staticmethod
-    def tag() -> str | None:
+    def tag(self) -> str | None:
         """Tag. E.g 'v1.1.2'. If '__version__', get the version.
 
         Type:
@@ -203,8 +194,7 @@ class PipelineConfig(Config):
         return "__version__"
 
     @MyProperty
-    @staticmethod
-    def tag_message() -> str:
+    def tag_message(self) -> str:
         """Tag message.
 
         Type:
@@ -216,8 +206,7 @@ class PipelineConfig(Config):
         return "New version"
 
     @MyProperty
-    @staticmethod
-    def deploy() -> bool:
+    def deploy(self) -> bool:
         """Deploy to PYPI.
 
         `TWINE_USERNAME` and `TWINE_PASSWORD` are used for authorization.
@@ -231,8 +220,7 @@ class PipelineConfig(Config):
         return False
 
     @MyProperty
-    @staticmethod
-    def allowed_branches() -> None | Sequence[str]:
+    def allowed_branches(self) -> None | Sequence[str]:
         """Pipeline runs only on defined branches.
 
         Type:
@@ -244,8 +232,7 @@ class PipelineConfig(Config):
         return ["master", "main"]
 
     @MyProperty
-    @staticmethod
-    def verbosity() -> Literal[0, 1, 2]:
+    def verbosity(self) -> Literal[0, 1, 2]:
         """Pipeline runs only on defined branches.
 
         Type:

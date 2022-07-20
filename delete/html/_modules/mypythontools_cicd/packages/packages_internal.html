@@ -1,0 +1,412 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mypythontools_cicd.packages.packages_internal &#8212; Python 20-07-2022 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="https://malachov.github.io/mypythontools/tools/sphinx-alabaster-css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for mypythontools_cicd.packages.packages_internal</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module with functions for &#39;packages&#39; subpackage.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pkg_resources</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="kn">from</span> <span class="nn">mypythontools.paths</span> <span class="kn">import</span> <span class="n">validate_path</span><span class="p">,</span> <span class="n">PathLike</span>
+
+<span class="kn">from</span> <span class="nn">mypythontools_cicd.project_paths</span> <span class="kn">import</span> <span class="n">PROJECT_PATHS</span>
+
+<span class="c1"># Lazy import</span>
+<span class="c1"># from setuptools import find_packages</span>
+
+
+<div class="viewcode-block" id="get_requirements_files"><a class="viewcode-back" href="../../../mypythontools_cicd.packages.html#mypythontools_cicd.packages.get_requirements_files">[docs]</a><span class="k">def</span> <span class="nf">get_requirements_files</span><span class="p">(</span>
+    <span class="n">requirements</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;infer&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="n">PathLike</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">PathLike</span><span class="p">],</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathLike</span> <span class="o">=</span> <span class="n">PROJECT_PATHS</span><span class="o">.</span><span class="n">root</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Consolidate requirements into list of paths.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        requirements (Literal[&quot;infer&quot;] | PathLike | Sequence[PathLike]): E.g. [&quot;requirements.txt&quot;,</span>
+<span class="sd">            &quot;requirements_dev.txt&quot;]. If &#39;infer&#39;, then every file where requirements is in the name is used.</span>
+<span class="sd">            It&#39;s not recursive and works only on defined folder.</span>
+<span class="sd">        path (PathLike, optional): If using just names or relative path, and not found, define the root.</span>
+<span class="sd">            It&#39;s also necessary when using another referenced files. If inferring files, it&#39;s used to search.</span>
+<span class="sd">            Defaults to PROJECT_PATHS.root.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[Path]: List of paths to requirements files.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RuntimeError: If no requirements found with &#39;infer&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">requirements</span> <span class="o">==</span> <span class="s2">&quot;infer&quot;</span><span class="p">:</span>
+
+        <span class="n">requirements_files</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">validate_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;requirements&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.txt&quot;</span><span class="p">:</span>
+                <span class="n">requirements_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">requirements_files</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;No requirements found.&quot;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">requirements</span><span class="p">,</span> <span class="p">(</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)):</span>
+            <span class="n">requirements</span> <span class="o">=</span> <span class="p">[</span><span class="n">requirements</span><span class="p">]</span>
+
+        <span class="c1"># When using just names or relative paths</span>
+        <span class="n">requirements</span> <span class="o">=</span> <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">/</span> <span class="n">Path</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">requirements</span><span class="p">]</span>
+
+        <span class="c1"># Enforce Path type and validate if exists</span>
+        <span class="n">requirements_files</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">validate_path</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="s2">&quot;&#39;get_requirements_files&#39; failed&quot;</span><span class="p">,</span> <span class="s2">&quot;Requirements file&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">requirements</span>
+        <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">requirements_files</span></div>
+
+
+<div class="viewcode-block" id="get_requirements"><a class="viewcode-back" href="../../../mypythontools_cicd.packages.html#mypythontools_cicd.packages.get_requirements">[docs]</a><span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span>
+    <span class="n">files</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;infer&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="n">PathLike</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">PathLike</span><span class="p">],</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathLike</span> <span class="o">=</span> <span class="n">PROJECT_PATHS</span><span class="o">.</span><span class="n">root</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Get requirements into variable usually used in setup.py.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        files (Literal[&quot;infer&quot;] | PathLike | Sequence[PathLike]): E.g. [&quot;requirements.txt&quot;,</span>
+<span class="sd">            &quot;requirements_dev.txt&quot;]. If &#39;infer&#39;, then every file where requirements is in the name is used.</span>
+<span class="sd">            It can be also absolute paths.</span>
+<span class="sd">        path (PathLike, optional): If using just names or relative path, and not found, define the root.</span>
+<span class="sd">            It&#39;s also necessary when using another referenced files. If inferring files, it&#39;s used to search.</span>
+<span class="sd">            Defaults to PROJECT_PATHS.root.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[str]: List of requirements</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">get_requirements_files</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="n">all_requirements</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">requirements</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="n">requirements</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">requirements</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)]</span>
+
+        <span class="c1"># narrow_requirements calls recursively get_requirements so it can have another -r reference</span>
+        <span class="n">requirements</span> <span class="o">=</span> <span class="n">narrow_requirements</span><span class="p">(</span><span class="n">requirements</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">requirements</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span> <span class="k">for</span> <span class="n">requirement</span> <span class="ow">in</span> <span class="n">pkg_resources</span><span class="o">.</span><span class="n">parse_requirements</span><span class="p">(</span><span class="n">requirements</span><span class="p">)]</span>
+        <span class="n">all_requirements</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">requirements</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">all_requirements</span></div>
+
+
+<span class="k">def</span> <span class="nf">narrow_requirements</span><span class="p">(</span><span class="n">requirements</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathLike</span> <span class="o">=</span> <span class="s2">&quot;requirements&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;If there is another requirements file reference in requirements.txt, this will replace it with its</span>
+<span class="sd">    requirements it contains.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        requirements (list[str]): List of requirements. You can parse it from file with `get_requirements`.</span>
+<span class="sd">        path (PathLike, optional): Path with referenced files. Defaults to &quot;requirements&quot;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[str]: List of plain pep 508 compatible requirements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">validate_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;&#39;narrow_requirements&#39; failed&quot;</span><span class="p">,</span> <span class="s2">&quot;Path with referenced requirements&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">requirements</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;-r &quot;</span><span class="p">):</span>
+            <span class="n">req_name</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">requirements</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">path</span> <span class="o">/</span> <span class="n">req_name</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">))</span>
+    <span class="n">requirements</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">requirements</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;-r &quot;</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">requirements</span>
+
+
+<div class="viewcode-block" id="validate_version"><a class="viewcode-back" href="../../../mypythontools_cicd.packages.html#mypythontools_cicd.packages.validate_version">[docs]</a><span class="k">def</span> <span class="nf">validate_version</span><span class="p">(</span><span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check whether parsed version is valid.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        version (str): E.g &quot;1.0.1&quot;</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: Whether is valid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">version</span> <span class="o">==</span> <span class="s2">&quot;increment&quot;</span> <span class="ow">or</span> <span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">isdecimal</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)])</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_readme"><a class="viewcode-back" href="../../../mypythontools_cicd.packages.html#mypythontools_cicd.packages.get_readme">[docs]</a><span class="k">def</span> <span class="nf">get_readme</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get README content into variable usually used in setup.py.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Content.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">PROJECT_PATHS</span><span class="o">.</span><span class="n">readme</span><span class="o">.</span><span class="n">as_posix</span><span class="p">())</span> <span class="k">as</span> <span class="n">readme_file</span><span class="p">:</span>
+        <span class="n">readme</span> <span class="o">=</span> <span class="n">readme_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">readme</span></div>
+
+
+<div class="viewcode-block" id="get_version"><a class="viewcode-back" href="../../../mypythontools_cicd.packages.html#mypythontools_cicd.packages.get_version">[docs]</a><span class="k">def</span> <span class="nf">get_version</span><span class="p">(</span><span class="n">init_path</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">PathLike</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get version info from `__init__.py` file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        init_path (None | PathLike, optional): Path to `__init__.py` file. If None, will be inferred.</span>
+<span class="sd">            Defaults to None.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: String of version from `__init__.py`.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If no `__version__` is find. Try set init_path...</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; version = get_version()</span>
+<span class="sd">        &gt;&gt;&gt; len(version.split(&quot;.&quot;)) == 3 and all([i.isdecimal() for i in version.split(&quot;.&quot;)])</span>
+<span class="sd">        True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">init_path</span> <span class="o">=</span> <span class="n">init_path</span> <span class="k">if</span> <span class="n">init_path</span> <span class="k">else</span> <span class="n">PROJECT_PATHS</span><span class="o">.</span><span class="n">init</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">init_path</span> <span class="o">=</span> <span class="n">validate_path</span><span class="p">(</span><span class="n">init_path</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Setting version failed. &#39;__init__.py&#39; not found on &#39;</span><span class="si">{</span><span class="n">init_path</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span> <span class="bp">None</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">init_path</span><span class="o">.</span><span class="n">as_posix</span><span class="p">(),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">init_file</span><span class="p">:</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s1">&#39;__version__ = &quot;(.*)&quot;&#39;</span><span class="p">,</span> <span class="n">init_file</span><span class="o">.</span><span class="n">read</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">validate_version</span><span class="p">(</span><span class="n">version</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">version</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Version not found in __init__.py&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="set_version"><a class="viewcode-back" href="../../../mypythontools_cicd.packages.html#mypythontools_cicd.packages.set_version">[docs]</a><span class="k">def</span> <span class="nf">set_version</span><span class="p">(</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;increment&quot;</span><span class="p">,</span>
+    <span class="n">init_path</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">PathLike</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Change your version in your `__init__.py` file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        version (str, optional): Form that is used in `__init__`, so for example &quot;1.2.3&quot;. Do not use &#39;v&#39;</span>
+<span class="sd">            appendix. If version is &#39;increment&#39;, it will increment your `__version__` in you `__init__.py` by</span>
+<span class="sd">            0.0.1. Defaults to &quot;increment&quot;.</span>
+<span class="sd">        init_path (None | PathLike, optional): Path of file where `__version__` is defined.</span>
+<span class="sd">            Usually `__init__.py`. If None, will be inferred. Defaults to None.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If no `__version__` is find.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">init_path</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">validate_path</span><span class="p">(</span><span class="n">init_path</span><span class="p">,</span> <span class="s2">&quot;Setting version failed&quot;</span><span class="p">,</span> <span class="s2">&quot;__init__.py&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">init_path</span> <span class="k">else</span> <span class="n">PROJECT_PATHS</span><span class="o">.</span><span class="n">init</span>
+    <span class="p">)</span>
+
+    <span class="n">is_valid</span> <span class="o">=</span> <span class="n">validate_version</span><span class="p">(</span><span class="n">version</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Version not validated. Version has to be of form &#39;1.2.3&#39;. Three digits and two dots. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;You used </span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">init_path</span><span class="o">.</span><span class="n">as_posix</span><span class="p">(),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">init_file</span><span class="p">:</span>
+
+        <span class="n">list_of_lines</span> <span class="o">=</span> <span class="n">init_file</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+
+        <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">list_of_lines</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">j</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;__version__&quot;</span><span class="p">):</span>
+
+                <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="n">delimiter</span> <span class="o">=</span> <span class="s1">&#39;&quot;&#39;</span> <span class="k">if</span> <span class="s1">&#39;&quot;&#39;</span> <span class="ow">in</span> <span class="n">j</span> <span class="k">else</span> <span class="s2">&quot;&#39;&quot;</span>
+                <span class="n">delimited</span> <span class="o">=</span> <span class="n">j</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">delimiter</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="s2">&quot;increment&quot;</span><span class="p">:</span>
+                    <span class="n">delimited</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">increment_version</span><span class="p">(</span><span class="n">delimited</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">delimited</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">version</span>
+
+                <span class="n">list_of_lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">delimiter</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">delimited</span><span class="p">)</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;__version__ variable not found in __init__.py. Try set init.&quot;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">init_path</span><span class="o">.</span><span class="n">as_posix</span><span class="p">(),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">init_file</span><span class="p">:</span>
+
+        <span class="n">init_file</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">list_of_lines</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="increment_version"><a class="viewcode-back" href="../../../mypythontools_cicd.packages.html#mypythontools_cicd.packages.increment_version">[docs]</a><span class="k">def</span> <span class="nf">increment_version</span><span class="p">(</span><span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Increment patch version by one.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        version (str): String format. It can include &#39;v&#39; prefix.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Incremented version</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; increment_version(&quot;1.2.3&quot;)</span>
+<span class="sd">        &#39;1.2.4&#39;</span>
+<span class="sd">        &gt;&gt;&gt; increment_version(&quot;v1.2.3&quot;)</span>
+<span class="sd">        &#39;v1.2.4&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">version_list</span> <span class="o">=</span> <span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="n">version_list</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">version_list</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">version_list</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_package_setup_args"><a class="viewcode-back" href="../../../mypythontools_cicd.packages.html#mypythontools_cicd.packages.get_package_setup_args">[docs]</a><span class="k">def</span> <span class="nf">get_package_setup_args</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">development_status</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">,</span> <span class="s2">&quot;stable&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;alpha&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Get setup args, that usually repeats across projects.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name (str): Name used to generate some params.</span>
+<span class="sd">        development_status (Literal[&#39;alpha&#39;, &#39;beta&#39;, &#39;stable&#39;]): Project phase. Defaults to &#39;alpha&#39;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[str, Any]: Attributes used in `setup.py`. E.g. license, platform</span>
+<span class="sd">            or long_description_content_type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">setuptools</span> <span class="kn">import</span> <span class="n">find_packages</span>
+
+    <span class="n">status</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="s2">&quot;Development Status :: 3 - Alpha&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="s2">&quot;Development Status :: 4 - Beta&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;stable&quot;</span><span class="p">:</span> <span class="s2">&quot;Development Status :: 5 - Production/Stable&quot;</span><span class="p">,</span>
+    <span class="p">}[</span><span class="n">development_status</span><span class="p">]</span>
+
+    <span class="n">classifiers</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">status</span><span class="p">,</span>
+        <span class="s2">&quot;Environment :: Other Environment&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Intended Audience :: Developers&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Intended Audience :: Education&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;License :: OSI Approved :: MIT License&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Natural Language :: English&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Operating System :: OS Independent&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Programming Language :: Python :: 3.7&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Programming Language :: Python :: 3.9&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Programming Language :: Python :: 3.10&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Programming Language :: Python :: 3.11&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Programming Language :: Python&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Topic :: Software Development :: Libraries :: Application Frameworks&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Topic :: Software Development :: Libraries :: Python Modules&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;license&quot;</span><span class="p">:</span> <span class="s2">&quot;mit&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;include_package_data&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;long_description_content_type&quot;</span><span class="p">:</span> <span class="s2">&quot;text/markdown&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;packages&quot;</span><span class="p">:</span> <span class="n">find_packages</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;tests**&quot;</span><span class="p">,)),</span>
+        <span class="s2">&quot;platforms&quot;</span><span class="p">:</span> <span class="s2">&quot;any&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;python_requires&quot;</span><span class="p">:</span> <span class="s2">&quot;&gt;=3.7&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;https://github.com/Malachov/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+        <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">get_version</span><span class="p">(),</span>
+        <span class="s2">&quot;classifiers&quot;</span><span class="p">:</span> <span class="n">classifiers</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+<span class="n">personal_setup_args_preset</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;author_email&quot;</span><span class="p">:</span> <span class="s2">&quot;malachovd@seznam.cz&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Daniel Malachov&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div id="logo">
+    <a href="/">
+        <img src="_static/logo.png" alt="Logo">
+    </a>
+</div>
+
+<div class="section" id="table-of-contents">
+
+    <h1>Table of content</h1>
+
+    <ul>
+        <li><a href="mypythontools_cicd.build_app.html">build_app</a></li>
+        <li><a href="mypythontools_cicd.cicd.html">cicd</a></li>
+        <li><a href="mypythontools_cicd.deploy.html">deploy</a></li>
+        <li><a href="mypythontools_cicd.docs.html">docs</a></li>
+        <li><a href="mypythontools_cicd.git.html">git</a></li>
+        <li><a href="mypythontools_cicd.misc.html">misc</a></li>
+        <li><a href="mypythontools_cicd.packages.html">packages</a></li>
+        <li><a href="mypythontools_cicd.project_paths.html">project_paths</a></li>
+        <li><a href="mypythontools_cicd.tests.html">tests</a></li>
+        <li><a href="mypythontools_cicd.venvs.html">venvs</a></li>
+    </ul>
+
+    <h2><a href="/genindex.html">Index</a></h2>
+
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Daniel Malachov.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/Malachov/mypythontools_cicd" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

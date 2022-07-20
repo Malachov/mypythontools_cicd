@@ -28,7 +28,7 @@ def test_build():
     if platform.system() == "Windows" and not is_wsl():
 
         # Build app with pyinstaller example
-        build_app.build_app(
+        build_app.build_with_pyinstaller(
             main_file="app.py",
             console=True,
             debug=True,
