@@ -28,6 +28,18 @@ Install with
 pip install mypythontools_cicd
 ```
 
+There are many extras requirements that can be used with square brackets like for example
+
+```console
+pip install mypythontools_cicd[tests]
+```
+
+You can use `dev` which install libraries used during development like for example pylint. Most subpackages
+has own extras. `'build','deploy', 'docs', 'git', 'misc', 'tests', 'venvs'` in particular.
+
+There is also `cicd` which install all libraries necessary for cicd, but without dev dependencies. Last
+extras are `all` which use dev as well as cicd.
+
 ## Subpackages
 Package is divided into several subpackages
 
