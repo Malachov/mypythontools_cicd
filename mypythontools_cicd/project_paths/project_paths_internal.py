@@ -96,7 +96,7 @@ class ProjectPaths:
 
     @property
     def app(self) -> Path:
-        """Folder where python scripts are (and __init__.py).
+        """Folder where python scripts are and `__init__.py`.
 
         Type:
             Path

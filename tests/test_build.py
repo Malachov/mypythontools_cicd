@@ -13,7 +13,7 @@ from mypythontools.system import is_wsl
 
 root_path = sys.path.insert(0, Path(__file__).parents[1].as_posix())  # pylint: disable=no-member
 
-from mypythontools_cicd import build
+from mypythontools_cicd import build_app
 
 
 from conftest import prepare_test
@@ -28,7 +28,7 @@ def test_build():
     if platform.system() == "Windows" and not is_wsl():
 
         # Build app with pyinstaller example
-        build.build_app(
+        build_app.build_app(
             main_file="app.py",
             console=True,
             debug=True,

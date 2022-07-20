@@ -35,7 +35,7 @@ pip install mypythontools_cicd[tests]
 ```
 
 You can use `dev` which install libraries used during development like for example pylint. Most subpackages
-has own extras. `'build','deploy', 'docs', 'git', 'misc', 'tests', 'venvs'` in particular.
+has own extras. `'build_app','deploy', 'docs', 'git', 'misc', 'tests', 'venvs'` in particular.
 
 There is also `cicd` which install all libraries necessary for cicd, but without dev dependencies. Last
 extras are `all` which use dev as well as cicd.
@@ -43,7 +43,7 @@ extras are `all` which use dev as well as cicd.
 ## Subpackages
 Package is divided into several subpackages
 
-### build
+### build_app
 Build your application to .exe with pyinstaller. It also builds javascript frontend with npm build if configured, which is used mostly in PyVueEel applications.
 
 ### cicd

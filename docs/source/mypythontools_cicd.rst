@@ -12,7 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   mypythontools_cicd.build
+   mypythontools_cicd.build_app
    mypythontools_cicd.cicd
    mypythontools_cicd.deploy
    mypythontools_cicd.docs

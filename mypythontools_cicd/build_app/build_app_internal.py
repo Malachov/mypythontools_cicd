@@ -22,7 +22,7 @@ from .. import venvs
 # import EelForkExcludeFiles
 
 
-def build_app(
+def build_with_pyinstaller(
     root_path: None | str | Path = None,
     main_file: str | Path = "app.py",
     preset: Literal["eel", None] = None,
