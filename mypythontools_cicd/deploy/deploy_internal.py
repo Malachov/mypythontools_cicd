@@ -74,7 +74,7 @@ def deploy_to_pypi(
         error_header="Build python distribution for PyPi deployment failed. Try to set 'pep517' to False.",
     )
 
-    command = f"twine upload dist/*"
+    command = "twine upload dist/*"
 
     terminal_do_command(
         command,
