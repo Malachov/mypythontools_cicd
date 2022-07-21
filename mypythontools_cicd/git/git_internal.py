@@ -7,6 +7,7 @@ from typing_extensions import Literal
 
 from mypythontools.misc import print_progress
 from mypythontools.types import validate_sequence
+from mypythontools.paths import PathLike
 from mypythontools.system import (
     get_console_str_with_quotes,
     terminal_do_command,
@@ -128,3 +129,14 @@ def check_branch(allowed_branches: Sequence[str]):
             "If you want to use it anyway, add it to allowed_branches parameter and "
             "turn off changing version and creating tag."
         )
+
+
+def clone_locally(from_path: PathLike, to_path: PathLike):
+    """Copy file from one place to another. Main benefit is, that `.gitignore` is used, so things like venv is
+    is not copied.
+
+    Args:
+        from_path (PathLike): Source
+        to_path (PathLike): Destination
+    """
+    terminal_do_command(f"git clone {from_path} {to_path}")

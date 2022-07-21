@@ -18,7 +18,7 @@ from mypythontools_cicd.cicd import cicd_pipeline, default_pipeline_config
 if __name__ == "__main__":
     config = default_pipeline_config.copy()
 
-    # config.do_only = "git_push"
+    # config.do_only = "test"
 
     config.deploy = True
     config.test.sync_test_requirements = ["tests.txt"]

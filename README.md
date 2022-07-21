@@ -1,4 +1,4 @@
-# mypythontools
+# mypythontools_cicd
 
 Module with functionality around Continuous Integration and Continuous Delivery.
 
