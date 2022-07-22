@@ -96,7 +96,7 @@ class PipelineConfig(Config):
         return True
 
     @MyProperty
-    def version(self) -> None | str:
+    def set_version(self) -> None | str:
         """Overwrite __version__ in __init__.py.
 
         Type:
@@ -342,7 +342,7 @@ def cicd_pipeline(
 
     if config.tag:
         if config.tag == "__version__":
-            tag = config.version
+            tag = config.set_version
             if tag == "increment":
                 tag = f"v{packages.increment_version(packages.get_version())}"
             if not tag:
@@ -370,10 +370,10 @@ def cicd_pipeline(
     if config.reformat:
         reformat_with_black()
 
-    if config.version and config.version != "None":
+    if config.set_version:
         print_progress("Setting version", progress_is_printed)
         original_version = packages.get_version()
-        packages.set_version(config.version)
+        packages.set_version(config.set_version)
 
     if config.docs:
         docs_regenerate(verbosity=verbosity)
@@ -390,13 +390,14 @@ def cicd_pipeline(
             )
 
     except Exception as err:  # pylint: disable=broad-except
-        if config.version:
+        if config.set_version:
             packages.set_version(original_version)  # type: ignore
 
         raise RuntimeError(
             f"{3 * EMOJIS.DISAPPOINTMENT} Utils pipeline failed {3 * EMOJIS.DISAPPOINTMENT} \n\n"
-            f"{'Original version restored. ' if config.version else ''}Nothing was pushed to repo, "
-            "you can restart pipeline. Commit already created."
+            f"{'Original version restored. ' if config.set_version else ''}Nothing was pushed to repo, "
+            "you can restart pipeline. "
+            f"{'All changes already committed.' if config.git_commit_all else ''}"
         ) from err
 
     try:
@@ -406,7 +407,9 @@ def cicd_pipeline(
     except Exception as err:  # pylint: disable=broad-except
         raise RuntimeError(
             f"{3 * EMOJIS.DISAPPOINTMENT} Deploy failed {3 * EMOJIS.DISAPPOINTMENT} \n\n"
-            "Already pushed to repository. Deploy manually. Version already changed.",
+            "Already pushed to repository. Deploy manually."
+            f"{'All changes already committed.' if config.git_commit_all else ''}"
+            f"{'Version already changed.' if config.set_version else ''}"
         ) from err
 
     print_progress(f"{3 * EMOJIS.PARTY} Finished {3 * EMOJIS.PARTY}", True)

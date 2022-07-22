@@ -26,7 +26,7 @@ def test_cicd_pipeline():
 
     config.git_push = False
     config.git_commit_all = None
-    config.version = None
+    config.set_version = None
     config.deploy = False
     config.sync_requirements = None
     config.tag = None
