@@ -133,7 +133,6 @@ class Venv:
             )
         self.installed = True
 
-    # TODO add "find_requirements.txt" to literal to find and install it when in requirements/requirements.txt
     def sync_requirements(
         self,
         requirements_files: None | Literal["infer"] | PathLike | Sequence[PathLike] = "infer",

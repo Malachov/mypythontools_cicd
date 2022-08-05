@@ -119,13 +119,7 @@ https://github.com/Malachov/mypythontools
 This can help you with a lot of stuff around CICD like getting project paths, generating docs, testing,
 deploying to PyPi etc.
 """
-from mypythontools_cicd import build_app
-from mypythontools_cicd import deploy
-from mypythontools_cicd import packages
-from mypythontools_cicd import cicd
-from mypythontools_cicd import project_paths
-from mypythontools_cicd import venvs
-from mypythontools_cicd import tests
+from mypythontools_cicd import build_app, deploy, packages, cicd, project_paths, tests, venvs
 
 __all__ = ["build_app", "deploy", "packages", "project_paths", "cicd", "tests", "venvs"]
 

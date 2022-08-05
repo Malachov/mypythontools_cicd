@@ -16,7 +16,7 @@ from mypythontools_cicd.cicd import cicd_pipeline, default_pipeline_config
 
 
 if __name__ == "__main__":
-    config = default_pipeline_config.copy()
+    config = default_pipeline_config.do.copy()
 
     # config.do_only = "test"
 

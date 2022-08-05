@@ -10,6 +10,7 @@ from mypythontools.misc import delete_files, print_progress
 from mypythontools.system import check_script_is_available, terminal_do_command, PYTHON
 
 from mypythontools_cicd.project_paths import PROJECT_PATHS
+from mypythontools_cicd.venvs import Venv
 
 
 def deploy_to_pypi(
@@ -17,6 +18,7 @@ def deploy_to_pypi(
     clean: bool = True,
     verbosity: Literal[0, 1, 2] = 1,
     pep517: bool = False,
+    venv: None | Venv = Venv("venv"),
 ) -> None:
     """Publish python library to PyPi.
 
@@ -36,6 +38,7 @@ def deploy_to_pypi(
             happened is printed. If 3, all the results from terminal are printed. Defaults to 1.
         pep517 (bool, optional): Whether using PEP 517, that use pyproject.toml to build distribution. Without
             it it's faster, but with it, pyproject.TOML can be used. Defaults to False.
+        venv (None | Venv): Venv used for building distribution. Defaults to Venv("venv").
     """
     print_progress("Deploying to PyPi", verbosity > 0)
     verbose = verbosity == 2
@@ -62,16 +65,20 @@ def deploy_to_pypi(
     delete_files(dist_path)
     delete_files(build_path)
 
+    activate_command = "" if not venv else f"{venv.activate_command} && "
+
     if pep517:
-        build_command = f"{PYTHON} -m build --wheel --sdist"
+        build_command = f"{activate_command} {PYTHON} -m build --wheel --sdist"
     else:
-        build_command = f"{PYTHON} setup.py sdist bdist_wheel"
+        build_command = f"{activate_command} {PYTHON} setup.py sdist bdist_wheel"
 
     terminal_do_command(
         build_command,
         cwd=setup_dir_path.as_posix(),
         verbose=verbose,
-        error_header="Build python distribution for PyPi deployment failed. Try to set 'pep517' to False.",
+        error_header=(
+            "Build python distribution for PyPi deployment failed. Change of 'pep517' parameter may help."
+        ),
     )
 
     command = "twine upload dist/*"

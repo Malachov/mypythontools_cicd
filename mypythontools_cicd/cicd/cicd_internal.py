@@ -18,6 +18,7 @@ from ..deploy import deploy_to_pypi
 from ..docs import docs_regenerate
 from ..misc import reformat_with_black
 from ..project_paths import PROJECT_PATHS
+from ..venvs import Venv
 
 from .. import packages
 
@@ -38,7 +39,7 @@ class PipelineConfig(Config):
         "reformat",
         "test",
         "docs",
-        "sync_test_requirements",
+        "sync_requirements",
         "git_commit_all",
         "git_push",
         "deploy",
@@ -47,7 +48,7 @@ class PipelineConfig(Config):
 
         Type:
             Literal[
-                None, "prepare_venvs", "reformat", "test", "docs", "sync_test_requirements", "git_commit_all",
+                None, "prepare_venvs", "reformat", "test", "docs", "sync_requirements", "git_commit_all",
                 "git_push", "deploy"
             ]
 
@@ -58,6 +59,18 @@ class PipelineConfig(Config):
         line entrypoint.
         """
         return None
+
+    @MyProperty
+    def venv(self) -> None | Venv:
+        """Used venv. Now used only in "deploy" function for build.
+
+        Type:
+            None | Venv
+
+        Default:
+            Venv("venv")
+        """
+        return Venv("venv")
 
     @MyProperty
     def prepare_venvs(self) -> None | list[str]:
@@ -298,7 +311,7 @@ def cicd_pipeline(
     docs for examples.
     """
     if not GLOBAL_VARS.is_tested:
-        config.with_argparse()
+        config.do.with_argparse()
 
     do_only = config.do_only
 
@@ -306,9 +319,23 @@ def cicd_pipeline(
     if do_only == "test":
         do_only = "run_tests"
 
+    # For do_only True value must be set for boolean even if not configured
+
     if do_only:
+        # There are some boolean variables where is enough to tell do_only name
+        do_only_booleans = ["reformat", "run_tests", "git_push", "deploy"]
         do_only_value = config[do_only]
-        config.update(
+        if do_only in do_only_booleans:
+            do_only_value = True
+        else:
+            # There are some variables, where not only variable is chosen, but also a value must be set
+            if not do_only_value:
+                raise RuntimeError(
+                    "If you are doing just one step from `cicd_pipeline` with 'do_only', for non boolean you "
+                    "must have also configured a value in the config."
+                )
+
+        config.do.update(
             {
                 "prepare_venvs": None,
                 "reformat": False,
@@ -318,13 +345,11 @@ def cicd_pipeline(
                 "git_commit_all": None,
                 "git_push": False,
                 "deploy": False,
-                "version": None,
+                "set_version": None,
+                "tag": None,
             }
         )
-        config.update({do_only: do_only_value})
-
-        if config.verbosity == 1:
-            config.verbosity = 0
+        config.do.update({do_only: do_only_value})
 
     verbosity = config.verbosity
     progress_is_printed = verbosity > 0
@@ -402,7 +427,7 @@ def cicd_pipeline(
 
     try:
         if config.deploy:
-            deploy_to_pypi(verbosity=verbosity)
+            deploy_to_pypi(verbosity=verbosity, venv=config.venv)
 
     except Exception as err:  # pylint: disable=broad-except
         raise RuntimeError(

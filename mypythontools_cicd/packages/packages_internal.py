@@ -24,7 +24,7 @@ def get_requirements_files(
     Args:
         requirements (Literal["infer"] | PathLike | Sequence[PathLike]): E.g. ["requirements.txt",
             "requirements_dev.txt"]. If 'infer', then every file where requirements is in the name is used.
-            It's not recursive and works only on defined folder.
+            It working with one level of nested folder if requirements is in the name of the file or folder.
         path (PathLike, optional): If using just names or relative path, and not found, define the root.
             It's also necessary when using another referenced files. If inferring files, it's used to search.
             Defaults to PROJECT_PATHS.root.
@@ -39,8 +39,8 @@ def get_requirements_files(
     if requirements == "infer":
 
         requirements_files = []
-
-        for i in validate_path(path).glob("*"):
+        path = validate_path(path)
+        for i in path.glob("*/*"):
             if "requirements" in i.as_posix().lower() and i.suffix == ".txt":
                 requirements_files.append(i)
 
@@ -51,13 +51,27 @@ def get_requirements_files(
         if isinstance(requirements, (Path, str, os.PathLike)):
             requirements = [requirements]
 
-        # When using just names or relative paths
-        requirements = [Path(path) / Path(i) if not Path(i).exists() else i for i in requirements]
-
         # Enforce Path type and validate if exists
-        requirements_files = [
-            validate_path(req, "'get_requirements_files' failed", "Requirements file") for req in requirements
-        ]
+        requirements_files = []
+        for req in requirements:
+            existing_file = None
+
+            if Path(req).exists():
+                existing_file = Path(req)
+            elif (Path(path) / req).exists():
+                existing_file = Path(path) / req
+            else:
+                for i in path.glob("*/*"):
+                    if i.name == req:
+                        existing_file = i
+                        break
+
+                if not existing_file:
+                    raise FileNotFoundError(
+                        f"Requirements file {req} not found. File may be referenced from another "
+                        "requirements. Try to use appropriate 'path' parameter."
+                    )
+            requirements_files.append(existing_file)
 
     return requirements_files
 
@@ -111,7 +125,7 @@ def narrow_requirements(requirements: list[str], path: PathLike = "requirements"
     for i in requirements:
         if i.startswith("-r "):
             req_name = i[3:].strip("\r\n")
-            requirements.extend(get_requirements(path / req_name, path=path))
+            requirements.extend(get_requirements(req_name, path=path))
     requirements = [i for i in requirements if not i.startswith("-r ")]
     return requirements
 

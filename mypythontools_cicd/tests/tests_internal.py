@@ -4,6 +4,8 @@ from __future__ import annotations
 from typing import Sequence
 import sys
 import warnings
+import doctest
+from doctest import OutputChecker
 
 from typing_extensions import Literal
 
@@ -23,6 +25,41 @@ from ..project_paths import PROJECT_PATHS
 INTERNAL_TESTS_PATH = ""
 """This is only for internal use."""
 
+_PY_THREE_EIGTH = doctest.register_optionflag("3.8")
+_PY_THREE_NINE = doctest.register_optionflag("3.9")
+_PY_THREE_TEN = doctest.register_optionflag("3.10")
+
+
+class CustomOutputChecker(OutputChecker):
+    """Class that can be used for some new doctest directives. There are 3.8, 3.9, 3.10 added. This means,
+    that test runs only when there is defined version or bigger. Add directive like this...::
+
+        >>> only_with_new()  # doctest: +3.8
+    """
+
+    def check_output(self, want, got, optionflags):
+        """Compare results with with expected output.
+
+        It originates from doctest and has the same form.
+
+        Args:
+            want (str): What should be on output for OK test.
+            got (str): The result of doctest test.
+            optionflags: Usually only if running from code.
+
+        Returns:
+            bool: True if some condition, otherwise default `check_output` usually called that return False if
+                'want' not equal to 'got'.
+        """
+        if optionflags & _PY_THREE_EIGTH and sys.version_info.minor < 8:
+            return True
+        elif optionflags & _PY_THREE_NINE and sys.version_info.minor < 9:
+            return True
+        elif optionflags & _PY_THREE_TEN and sys.version_info.minor < 10:
+            return True
+
+        return OutputChecker.check_output(self, want, got, optionflags)
+
 
 class TestConfig(Config):
     """Allow to setup tests."""
@@ -37,7 +74,7 @@ class TestConfig(Config):
         Default:
             None
 
-        If None, root is used. Root is necessary if using doctest, 'tests' folder not works for doctest.
+        If None, root is used. Root is necessary if using doctest, 'tests' omits docstrings tests from code.
         """
         return None
 
@@ -91,7 +128,7 @@ class TestConfig(Config):
 
     @MyProperty
     def test_coverage(self) -> bool:
-        """Whether run test coverage plugin. If True, pytest-cov must be installed.
+        """Whether run test coverage plugin. If True, library `pytest-cov` must be installed.
 
         Type:
             bool
@@ -153,7 +190,7 @@ class TestConfig(Config):
         Default:
             ["requirements.txt"]
 
-        If using `virtualenvs` define what libraries will be installed by path to requirements. It can
+        If using virtualenvs define what libraries will be installed by path to requirements. It can
         also be a list of more files e.g ``["requirements.txt", "requirements_dev.txt"]``. If "infer",
         auto detected (all requirements), not recursively, only on defined path.
         """
@@ -184,13 +221,13 @@ class TestConfig(Config):
         Default:
             1
 
-        If 0, no details, parameters `-q and `--tb=line` are added. if 1, some details are added --tb=short.
-        If 2, more details are printed (default --tb=auto).
+        If 0, no details, parameters `-q` and `--tb=line` are added. if 1, some details are added
+        `--tb=short`. If 2, more details are printed (default `--tb=auto`).
         """
         return 1
 
     @MyProperty
-    def extra_args(self) -> None | list:
+    def extra_args(self) -> None | list[str]:
         """List of args passed to pytest.
 
         Type:
@@ -350,6 +387,10 @@ def setup_tests(
 
     Value Mylogging.config.colorize = 0 changed globally.
 
+    There are some doctest directives added. E.g. this will test only on defined python version or newer::
+
+        >>> only_for_new() # doctest: +3.8
+
     Note:
         Function expect `tests` folder on root. If not, test folder will not be added to sys path and
         imports from tests will not work.
@@ -364,6 +405,8 @@ def setup_tests(
             Defaults to 2.
 
     """
+    doctest.OutputChecker = CustomOutputChecker
+
     mylogging.config.colorize = False
 
     PROJECT_PATHS.add_root_to_sys_path()
