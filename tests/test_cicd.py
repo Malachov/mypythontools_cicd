@@ -22,7 +22,7 @@ test_project_path = Path("tests").resolve() / "tested project"
 
 def test_cicd_pipeline():
 
-    config = cicd.cicd.default_pipeline_config.copy()
+    config = cicd.cicd.default_pipeline_config.do.copy()
 
     config.git_push = False
     config.git_commit_all = None
@@ -35,14 +35,14 @@ def test_cicd_pipeline():
     config.test.sync_test_requirements = None
     if platform.system() != "Windows" or is_wsl():
         cicd.venvs.prepare_venvs("venv/test_cicd/linux", ["3.10"])
-        config.test.update(
+        config.test.do.update(
             {
                 "virtualenvs": ["venv/test_cicd/linux/3.10"],
             }
         )
     else:
         cicd.venvs.prepare_venvs("venv/test_cicd", ["3.10", "wsl-3.10"])
-        config.test.update(
+        config.test.do.update(
             {
                 "virtualenvs": ["venv/test_cicd/3.10"],
                 "wsl_virtualenvs": ["venv/test_cicd/wsl-3.10"],

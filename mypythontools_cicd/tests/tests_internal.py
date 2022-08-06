@@ -6,6 +6,7 @@ import sys
 import warnings
 import doctest
 from doctest import OutputChecker
+from pathlib import Path
 
 from typing_extensions import Literal
 
@@ -34,7 +35,7 @@ class CustomOutputChecker(OutputChecker):
     """Class that can be used for some new doctest directives. There are 3.8, 3.9, 3.10 added. This means,
     that test runs only when there is defined version or bigger. Add directive like this...::
 
-        >>> only_with_new()  # doctest: +3.8
+        tested_doctest_line  # doctest: +3.9
     """
 
     def check_output(self, want, got, optionflags):
@@ -275,11 +276,20 @@ def run_tests(
         if config.tested_path
         else PROJECT_PATHS.root
     )
+    try:
+        tested_path = tested_path.relative_to(Path.cwd())
+    except Exception:
+        pass
+
     tests_path = (
         validate_path(config.tests_path, "Running tests failed", "tests_path")
         if config.tests_path
         else PROJECT_PATHS.tests
     )
+    try:
+        tests_path = tests_path.relative_to(Path.cwd())
+    except Exception:
+        pass
 
     verbosity = config.verbosity
     verbose = True if verbosity == 2 else False
@@ -349,7 +359,6 @@ def run_tests(
                 )
             my_venv.sync_requirements(
                 config.sync_test_requirements,
-                ["mypythontools_cicd[tests]"],
                 verbosity=inner_verbosity,
                 path=config.sync_test_requirements_path,
             )
@@ -358,10 +367,8 @@ def run_tests(
         # Usually just respond with Requirements already satisfied.
         if INTERNAL_TESTS_PATH:
             my_venv.install_library(".[tests]", upgrade=True, path=INTERNAL_TESTS_PATH)
-        else:
-            my_venv.install_library("mypythontools_cicd[tests]", upgrade=True)
 
-        used_command = f"{my_venv.activate_command} && {test_command}"
+        used_command = f"{my_venv.activate_command} && {used_command}"
 
         if verbosity:
             print(f"\tStarting tests with {'wsl' if wsl else ''} venv `{venv}`")
@@ -389,7 +396,7 @@ def setup_tests(
 
     There are some doctest directives added. E.g. this will test only on defined python version or newer::
 
-        >>> only_for_new() # doctest: +3.8
+        tested_doctest_line  # doctest: +3.9
 
     Note:
         Function expect `tests` folder on root. If not, test folder will not be added to sys path and

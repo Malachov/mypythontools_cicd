@@ -40,7 +40,7 @@ def get_requirements_files(
 
         requirements_files = []
         path = validate_path(path)
-        for i in path.glob("*/*"):
+        for i in [*path.glob("*"), *path.glob("*/*")]:
             if "requirements" in i.as_posix().lower() and i.suffix == ".txt":
                 requirements_files.append(i)
 
@@ -91,6 +91,9 @@ def get_requirements(
 
     Returns:
         list[str]: List of requirements
+
+    Raises:
+        RuntimeError: If no requirements files found with 'infer'.
     """
     files = get_requirements_files(files, path)
     all_requirements = []

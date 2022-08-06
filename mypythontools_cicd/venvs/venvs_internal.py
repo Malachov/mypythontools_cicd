@@ -162,10 +162,16 @@ class Venv:
         requirements_all = []
 
         if requirements_files:
-            requirements_all.extend(get_requirements(requirements_files, path))
+            try:
+                requirements_all.extend(get_requirements(requirements_files, path))
+            except RuntimeError:
+                pass
 
         if requirements:
             requirements_all.extend(requirements)
+
+        if not requirements_all:
+            raise RuntimeError("No requirements found.")
 
         requirements_all_path = self.venv_path / "requirements_all.in"
         if isinstance(self.venv_path, WslPath):
