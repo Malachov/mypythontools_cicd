@@ -2,5 +2,6 @@ bandit
 black
 line_profiler
 memory_profiler
+perflint
 pydocstyle
 pylint
