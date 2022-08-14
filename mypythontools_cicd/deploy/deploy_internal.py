@@ -65,12 +65,12 @@ def deploy_to_pypi(
     delete_files(dist_path)
     delete_files(build_path)
 
-    activate_command = "" if not venv else f"{venv.activate_command} && "
+    activate_prefix_command = "" if not venv else venv.activate_prefix_command
 
     if pep517:
-        build_command = f"{activate_command} {PYTHON} -m build --wheel --sdist"
+        build_command = f"{activate_prefix_command} {PYTHON} -m build --wheel --sdist"
     else:
-        build_command = f"{activate_command} {PYTHON} setup.py sdist bdist_wheel"
+        build_command = f"{activate_prefix_command} {PYTHON} setup.py sdist bdist_wheel"
 
     terminal_do_command(
         build_command,

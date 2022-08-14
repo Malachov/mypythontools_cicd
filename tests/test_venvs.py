@@ -6,7 +6,7 @@ import platform
 from mypythontools.misc import delete_files
 from mypythontools.system import is_wsl
 
-root_path = sys.path.insert(0, Path(__file__).parents[1].as_posix())  # pylint: disable=no-member
+sys.path.insert(0, Path(__file__).parents[1].as_posix())  # pylint: disable=no-member
 
 from conftest import prepare_test
 from mypythontools_cicd import venvs

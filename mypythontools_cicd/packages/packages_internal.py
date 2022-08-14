@@ -36,10 +36,11 @@ def get_requirements_files(
         RuntimeError: If no requirements found with 'infer'.
     """
 
+    path = validate_path(path)
+
     if requirements == "infer":
 
         requirements_files = []
-        path = validate_path(path)
         for i in [*path.glob("*"), *path.glob("*/*")]:
             if "requirements" in i.as_posix().lower() and i.suffix == ".txt":
                 requirements_files.append(i)
@@ -58,10 +59,10 @@ def get_requirements_files(
 
             if Path(req).exists():
                 existing_file = Path(req)
-            elif (Path(path) / req).exists():
-                existing_file = Path(path) / req
+            elif (path / req).exists():
+                existing_file = path / req
             else:
-                for i in path.glob("*/*"):
+                for i in [*path.glob("*"), *path.glob("*/*")]:
                     if i.name == req:
                         existing_file = i
                         break

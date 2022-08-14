@@ -1,5 +1,7 @@
 scratch_notepad.py
 
+.coverage**
+
 package-lock.json
 
 web_builded/

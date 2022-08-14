@@ -325,7 +325,7 @@ coll = COLLECT(exe,
             my_venv.sync_requirements(sync_requirements)
 
         pyinstaller_script = my_venv.get_script_path("pyinstaller")
-        command = my_venv.activate_command + " && " + pyinstaller_script + " --noconfirm " + spec_path
+        command = my_venv.activate_prefix_command + pyinstaller_script + " --noconfirm " + spec_path
 
     else:
         command = f"pyinstaller --noconfirm {spec_path}"

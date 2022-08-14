@@ -28,4 +28,4 @@ if __name__ == "__main__":
     # Find paths and add to sys.path to be able to import local modules
     prepare_test()
 
-    test_set_version()
+    # test_set_version()

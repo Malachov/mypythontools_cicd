@@ -123,7 +123,7 @@ from mypythontools_cicd import build_app, deploy, packages, cicd, project_paths,
 
 __all__ = ["build_app", "deploy", "packages", "project_paths", "cicd", "tests", "venvs"]
 
-__version__ = "0.0.34"
+__version__ = "0.0.35"
 
 __author__ = "Daniel Malachov"
 __license__ = "MIT"

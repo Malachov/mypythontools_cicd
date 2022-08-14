@@ -237,7 +237,22 @@ class TestConfig(Config):
         Default:
             None
         """
-        return None
+
+    @MyProperty
+    def install_package(self) -> bool | Literal["auto"]:
+        """Install package from `setup.py`.
+
+        Type:
+            bool | Literal["auto"]
+
+        Default:
+            "auto"
+
+        First it solves import problems in tests, second, it tests `setup.py` and `pyproject.toml`. It runs
+        `pip install --upgrade --force-reinstall .`. If there is library already installed, it will be
+        reinstalled. If `auto` it will test it if `setup.py` is available in current working directory.
+        """
+        return "auto"
 
 
 default_test_config = TestConfig()
@@ -325,6 +340,11 @@ def run_tests(
         used_path = tested_path if not wsl else WslPath(tested_path).wsl_path
         tested_path_str = get_console_str_with_quotes(used_path)
 
+        my_venv = Venv(venv, with_wsl=wsl)
+
+        if verbosity:
+            print(f"\tTests with{' wsl ' if wsl else ' '}venv '{my_venv.venv_path.name}'")
+
         complete_args = (
             "pytest",
             tested_path_str,
@@ -334,6 +354,14 @@ def run_tests(
         test_command = " ".join(complete_args)
 
         used_command = test_command
+
+        # To be able to not install dev requirements in older python venv, pytest is installed.
+        # Usually just respond with Requirements already satisfied.
+        if INTERNAL_TESTS_PATH:
+            my_venv.install_library(".[tests]", upgrade=True, path=INTERNAL_TESTS_PATH)
+
+        used_command = f"{my_venv.activate_prefix_command} {used_command}"
+
         if i == 0:
             if config.test_coverage:
                 # Add coverage only to first virtualenv
@@ -343,35 +371,38 @@ def run_tests(
                     f"{get_console_str_with_quotes(xml_path)}"
                 )
 
-        my_venv = Venv(venv, with_wsl=wsl)
-
         if not my_venv.installed:
             raise RuntimeError(
                 f"Defined virtualenv on {my_venv.venv_path} not found. Use 'prepare_test_venvs' or install "
                 "venvs manually."
             )
 
+        if config.install_package == True or (
+            config.install_package == "auto" and (PROJECT_PATHS.root / "setup.py").exists()
+        ):
+            if verbosity:
+                print(f"\t\tInstalling package from setup.py")
+
+            terminal_do_command(
+                f"{my_venv.activate_prefix_command} pip install --upgrade --force-reinstall . ",
+                cwd=tested_path.as_posix(),
+                verbose=verbose,
+                error_header="Tests failed.",
+                with_wsl=wsl,
+            )
+
         if config.sync_test_requirements:
             if verbosity:
-                print(
-                    f"\tSyncing requirements in{' wsl ' if wsl else ' '}venv '{my_venv.venv_path.name}' "
-                    "for tests"
-                )
+                print(f"\t\tSyncing requirements")
+
             my_venv.sync_requirements(
                 config.sync_test_requirements,
                 verbosity=inner_verbosity,
                 path=config.sync_test_requirements_path,
             )
 
-        # To be able to not install dev requirements in older python venv, pytest is installed.
-        # Usually just respond with Requirements already satisfied.
-        if INTERNAL_TESTS_PATH:
-            my_venv.install_library(".[tests]", upgrade=True, path=INTERNAL_TESTS_PATH)
-
-        used_command = f"{my_venv.activate_command} && {used_command}"
-
         if verbosity:
-            print(f"\tStarting tests with {'wsl' if wsl else ''} venv `{venv}`")
+            print("\t\tRunning tests")
 
         terminal_do_command(
             used_command,

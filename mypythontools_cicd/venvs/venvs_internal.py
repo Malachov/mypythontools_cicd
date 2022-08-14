@@ -34,22 +34,41 @@ class Venv:
     """You can create new venv or sync it's dependencies.
 
     Attributes:
-        venv_path(Path): Path of venv. E.g. `venv`
-        with_wsl(bool, optional): If working with linux venv from linux.
+        venv_path (Path): Path of venv. E.g. `venv`
+        with_wsl (bool, optional): If working with linux venv from linux.
 
     Example:
         >>> from pathlib import Path
+        >>> import subprocess
         >>> from mypythontools.system import is_wsl
         ...
         >>> path = "venv/doctest/3.10" if platform.system() == "Windows" and not is_wsl() else "venv/doctest/wsl-3.10"
         >>> venv = Venv(path)
-        >>> venv.create()  # If already exists, it's skipped
+
+        Create venv. Skip if exists
+
+        >>> venv.create()
+
+        Install one library with
+
         >>> venv.install_library("colorama==0.3.9")
         >>> "colorama==0.3.9" in venv.list_packages()
         True
+
+        Sync requirements that are in requirements file (also remove if not in requirements)
+
         >>> venv.sync_requirements(verbosity=0, path=PROJECT_PATHS.root)  # There ia a 0.4.4 in requirements.txt
         >>> "colorama==0.4.4" in venv.list_packages()
         True
+
+        You can use this venv from different venv with subprocess
+
+        >>> result = subprocess.run(f"{venv.activate_prefix_command} pip list", capture_output=True, shell=True).stdout
+        >>> "colorama" in str(result)
+        True
+
+        Remove venv with
+
         >>> venv.remove()
         >>> Path(path).exists()
         False
@@ -73,9 +92,23 @@ class Venv:
 
         wsl = is_wsl() or with_wsl
 
+        # Document attributes, so it's documented also in objects
         self.executable_str: str
         """Path to the executables. Can be directly used in terminal. Some libraries cannot use
         ``python -m package`` syntax and therefore it can be called from scripts folder."""
+        self.installed: bool
+        """Whether venv is installed on defined path. Inferred just in init - static variable."""
+        self.executable: Path
+        """Path to Python executable (e.g. Python.exe)."""
+        self.create_command: str
+        """Command that can be used to create venv."""
+        self.scripts_path: Path
+        """Path to scripts like for example pip or black."""
+        self.activate_prefix_command: str
+        """This command will activate venv. It also contains shell like e.g. `&&`, so next command needs to
+        be defined if using in subprocess."""
+        self.executable_str: str
+        """Path to Python executable in posix string form."""
 
         if platform.system() == "Windows" and not wsl:
             activate_path = venv_path / "Scripts" / "activate.bat"
@@ -83,7 +116,9 @@ class Venv:
             self.executable = venv_path / "Scripts" / "python.exe"
             self.create_command = f"python -m venv {self.venv_path_console_str}"
             self.scripts_path = venv_path / "Scripts"
-            self.activate_command = get_console_str_with_quotes(activate_path.as_posix())
+            self.activate_prefix_command = (
+                f"{get_console_str_with_quotes(activate_path.as_posix())} {SHELL_AND} "
+            )
             self.executable_str = get_console_str_with_quotes((self.executable).as_posix())
 
         elif platform.system() == "Windows" and with_wsl:
@@ -93,7 +128,9 @@ class Venv:
             self.executable = venv_path / "bin" / "python"
             self.create_command = f"python3 -m venv {self.venv_path_console_str}"
             self.scripts_path = venv_path / "bin"
-            self.activate_command = f". {get_console_str_with_quotes(activate_path.wsl_path)}"
+            self.activate_prefix_command = (
+                f". {get_console_str_with_quotes(activate_path.wsl_path)} {SHELL_AND} "
+            )
             self.executable_str = get_console_str_with_quotes((venv_path / "bin" / "python").wsl_path)
 
         else:
@@ -102,13 +139,13 @@ class Venv:
             self.executable = venv_path / "bin" / "python"
             self.create_command = f"python3 -m venv {self.venv_path_console_str}"
             self.scripts_path = venv_path / "bin"
-            self.activate_command = f". {get_console_str_with_quotes(activate_path)}"
+            self.activate_prefix_command = f". {get_console_str_with_quotes(activate_path)} {SHELL_AND} "
             self.executable_str = get_console_str_with_quotes((venv_path / "bin" / "python"))
 
         self.venv_path = venv_path
         """Path to venv prefix, e.g. .../venv"""
 
-        self.subprocess_prefix = f"{self.activate_command} {SHELL_AND} {self.executable_str} -m "
+        self.subprocess_prefix = f"{self.activate_prefix_command} {self.executable_str} -m "
         """Run as module, so library can be directly call afterwards. Can be directly used in terminal. It can
         look like this for example::
         
@@ -201,7 +238,7 @@ class Venv:
 
         for i, j in sync_commands.items():
             terminal_do_command(
-                f"{self.activate_command} {SHELL_AND} {i}",
+                f"{self.activate_prefix_command} {i}",
                 verbose=verbosity == 2,
                 error_header=j,
                 with_wsl=self.with_wsl,
@@ -216,7 +253,7 @@ class Venv:
         self._raise_if_not_installed()
 
         result = terminal_do_command(
-            f"{self.activate_command} {SHELL_AND} {self.executable_str} -m pip freeze",
+            f"{self.activate_prefix_command} {self.executable_str} -m pip freeze",
             with_wsl=self.with_wsl,
             verbose=False,
         )
@@ -241,7 +278,7 @@ class Venv:
         """
         self._raise_if_not_installed()
 
-        command = f"{self.activate_command} {SHELL_AND} {self.executable_str} -m pip install {name} {'--upgrade' if upgrade else ''}"
+        command = f"{self.activate_prefix_command} {self.executable_str} -m pip install {name} {'--upgrade' if upgrade else ''}"
         terminal_do_command(
             command,
             shell=True,
@@ -261,7 +298,7 @@ class Venv:
         """
         self._raise_if_not_installed()
 
-        command = f"{self.activate_command} {SHELL_AND} {self.executable_str} -m pip uninstall {name}"
+        command = f"{self.activate_prefix_command} {self.executable_str} -m pip uninstall {name}"
 
         terminal_do_command(
             command,
@@ -269,7 +306,7 @@ class Venv:
             verbose=verbose,
             error_header="Library removal failed",
             with_wsl=self.with_wsl,
-            input="y",
+            input_str="y",
         )
 
     def remove(self) -> None:

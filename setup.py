@@ -34,6 +34,7 @@ if __name__ == "__main__":
         **packages.personal_setup_args_preset,
         description="Some tools/functions/snippets used across projects.",
         long_description=packages.get_readme(),
+        keywords=["CICD", "documentation", "tests", "packages"],
         install_requires=packages.get_requirements("requirements.txt", "requirements"),
         extras_require=extras_requirements,
         entry_points={
